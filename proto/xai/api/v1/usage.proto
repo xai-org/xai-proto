@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package xai_api;
+
+// Records the cost associated with a sampling request (both chat and sample
+// endpoints).
+message SamplingUsage {
+  // Total number of text completion tokens generated across all choices
+  // (in case of n>1).
+  int32 completion_tokens = 1;
+
+  // Total number of reasoning tokens generated across all choices.
+  int32 reasoning_tokens = 6;
+
+  // Total number of prompt tokens (both text and images).
+  int32 prompt_tokens = 2;
+
+  // Total number of tokens (prompt + completion).
+  int32 total_tokens = 3;
+
+  // Total number of (uncached) text tokens in the prompt.
+  int32 prompt_text_tokens = 4;
+
+  // Total number of cached text tokens in the prompt.
+  int32 cached_prompt_text_tokens = 7;
+
+  // Total number of image tokens in the prompt.
+  int32 prompt_image_tokens = 5;
+
+  // Number of individual live search sources used.
+  // Only applicable when live search is enabled.
+  // e.g. If a live search query returns citations from both X and Web and news sources, this will be 3.
+  // If it returns citations from only X, this will be 1.
+  int32 num_sources_used = 8;
+}
+
+// Usage of embedding models.
+message EmbeddingUsage {
+  // The number of feature vectors produced from text inputs.
+  int32 num_text_embeddings = 1;
+
+  // The number of feature vectors produced from image inputs.
+  int32 num_image_embeddings = 2;
+}

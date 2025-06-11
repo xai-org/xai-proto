@@ -1,0 +1,19 @@
+# This workflow runs checks on pull_requests only, without push and archive steps.
+name: Buf CI
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - proto/**
+      - .github/workflows/buf-ci.yaml
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+permissions:
+  contents: read
+  pull-requests: write # allow the buf action to leave comments on the PR
+jobs:
+  buf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@5150a1eef5c10b6a5cf8a69fc872f24a09473195

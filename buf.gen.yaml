@@ -1,0 +1,11 @@
+version: v2
+clean: true # remove generated files before re-generating
+managed:
+  enabled: true
+plugins:
+  - remote: buf.build/protocolbuffers/python:v29.3 # the major version here needs to match that of the `protobuf` package in your python project
+    out: gen/python
+  - remote: buf.build/grpc/python:v1.72.1 # the major version here needs to match that of the `grpc` package in your python project
+    out: gen/python
+  - remote: buf.build/protocolbuffers/pyi:v29.3 # the major version here needs to match that of the `protobuf` package in your python project
+    out: gen/python

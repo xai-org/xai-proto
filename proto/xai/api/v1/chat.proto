@@ -1,0 +1,594 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "google/protobuf/timestamp.proto";
+import "xai/api/v1/deferred.proto";
+import "xai/api/v1/image.proto";
+import "xai/api/v1/sample.proto";
+import "xai/api/v1/usage.proto";
+
+// An API that exposes our language models via a Chat interface.
+service Chat {
+  // Samples a response from the model and blocks until the response has been
+  // fully generated.
+  rpc GetCompletion(GetCompletionsRequest) returns (GetChatCompletionResponse) {}
+
+  // Samples a response from the model and streams out the model tokens as they
+  // are being generated.
+  rpc GetCompletionChunk(GetCompletionsRequest) returns (stream GetChatCompletionChunk) {}
+
+  // Starts sampling of the model and immediately returns a response containing
+  // a request id. The request id may be used to poll
+  // the `GetDeferredCompletion` RPC.
+  rpc StartDeferredCompletion(GetCompletionsRequest) returns (StartDeferredResponse) {}
+
+  // Gets the result of a deferred completion started by calling `StartDeferredCompletion`.
+  rpc GetDeferredCompletion(GetDeferredRequest) returns (GetDeferredCompletionResponse) {}
+}
+
+message GetCompletionsRequest {
+  reserved 4;
+
+  // A sequence of messages in the conversation. There must be at least a single
+  // message that the model can respond to.
+  repeated Message messages = 1;
+
+  // Name of the model. This is the name as reported by the models API. More
+  // details can be found on your console at https://console.x.ai.
+  string model = 2;
+
+  // An opaque string supplied by the API client (customer) to identify a user.
+  // The string will be stored in the logs and can be used in customer service
+  // requests to identify certain requests.
+  string user = 16;
+
+  // The number of completions to create concurrently. A single completion will
+  // be generated if the parameter is unset. Each completion is charged at the
+  // same rate. You can generate at most 128 concurrent completions.
+  optional int32 n = 8;
+
+  // The maximum number of tokens to sample. If unset, the model samples until
+  // one of the following stop-conditions is reached:
+  // - The context length of the model is exceeded
+  // - One of the `stop` sequences has been observed.
+  // - The time limit exceeds.
+  //
+  // We recommend choosing a reasonable value to reduce the risk of accidental
+  // long-generations that consume many tokens. This included potentially hidden
+  // tokens required for reasoning or parsing.
+  optional int32 max_tokens = 7;
+
+  // A random seed used to make the sampling process deterministic. This is
+  // provided in a best-effort basis without guarantee that sampling is 100%
+  // deterministic given a seed. This is primarily provided for short-lived
+  // testing purposes. Given a fixed request and seed, the answers may change
+  // over time as our systems evolve.
+  optional int32 seed = 11;
+
+  // String patterns that will cause the sampling procedure to stop prematurely
+  // when observed.
+  // Note that the completion is based on individual tokens and sampling can
+  // only terminate at token boundaries. If a stop string is a substring of an
+  // individual token, the completion will include the entire token, which
+  // extends beyond the stop string.
+  // For example, if `stop = ["wor"]` and we prompt the model with "hello" to
+  // which it responds with "world", then the sampling procedure will stop after
+  // observing the "world" token and the completion will contain
+  // the entire world "world" even though the stop string was just "wor".
+  // You can provide at most 8 stop strings.
+  repeated string stop = 12;
+
+  // A number between 0 and 2 used to control the variance of completions.
+  // The smaller the value, the more deterministic the model will become. For
+  // example, if we sample 1000 answers to the same prompt at a temperature of
+  // 0.001, then most of the 1000 answers will be identical. Conversely, if we
+  // conduct the same experiment at a temperature of 2, virtually no two answers
+  // will be identical. Note that increasing the temperature will cause
+  // the model to hallucinate more strongly.
+  optional float temperature = 14;
+
+  // A number between 0 and 1 controlling the likelihood of the model to use
+  // less-common answers. Recall that the model produces a probability for
+  // each token. This means, for any choice of token there are thousands of
+  // possibilities to choose from. This parameter controls the "nucleus sampling
+  // algorithm". Instead of considering every possible token at every step, we
+  // only look at the K tokens who's probabilities exceed `top_p`.
+  // For example, if we set `top_p = 0.9`, then the set of tokens we actually
+  // sample from, will have a probability mass of at least 90%. In practice,
+  // low values will make the model more deterministic.
+  optional float top_p = 15;
+
+  // If set to true, log probabilities of the sampling are returned.
+  bool logprobs = 5;
+
+  // Number of top log probabilities to return.
+  optional int32 top_logprobs = 6;
+
+  // A list of tools the model may call. Currently, only functions are supported
+  // as a tool. Use this to provide a list of functions the model may generate
+  // JSON inputs for.
+  repeated Tool tools = 17;
+
+  // Controls if the model can, should, or must not use tools.
+  ToolChoice tool_choice = 18;
+
+  // Formatting constraint on the response.
+  ResponseFormat response_format = 10;
+
+  // Positive values penalize new tokens based on their existing frequency in
+  // the text so far, decreasing the model's likelihood to repeat the same line
+  // verbatim.
+  optional float frequency_penalty = 3;
+
+  // Positive values penalize new tokens based on whether they appear in
+  // the text so far, increasing the model's likelihood to talk about
+  // new topics.
+  optional float presence_penalty = 9;
+
+  // Constrains effort on reasoning for reasoning models. Default to `EFFORT_MEDIUM`.
+  optional ReasoningEffort reasoning_effort = 19;
+
+  // Set the parameters to be used for realtime data. If not set, no realtime data will be acquired by the model.
+  optional SearchParameters search_parameters = 20;
+
+  /// If set to false, the model can perform maximum one tool call per response. Default to true.
+  optional bool parallel_tool_calls = 21;
+}
+
+message GetChatCompletionResponse {
+  // The ID of this request. This ID will also show up on your billing records
+  // and you can use it when contacting us regarding a specific request.
+  string id = 1;
+
+  // Completions in response to the input messages. The number of completions is
+  // controlled via the `n` parameter on the request.
+  repeated Choice choices = 2;
+
+  // A UNIX timestamp (UTC) indicating when the response object was created.
+  // The timestamp is taken when the model starts generating response.
+  google.protobuf.Timestamp created = 5;
+
+  // The name of the model used for the request. This model name contains
+  // the actual model name used rather than any aliases.
+  // This means the this can be `grok-2-1212` even when the request was
+  // specifying `grok-2-latest`.
+  string model = 6;
+
+  // This fingerprint represents the backend configuration that the model runs
+  // with.
+  string system_fingerprint = 7;
+
+  // The number of tokens consumed by this request.
+  SamplingUsage usage = 9;
+
+  /// List of all the external pages (urls) used by the model to produce its final answer.
+  // This is only present when live search is enabled, (That is `SearchParameters` have been defined in `GetCompletionsRequest`).
+  repeated string citations = 10;
+}
+
+message GetChatCompletionChunk {
+  // The ID of this request. This ID will also show up on your billing records
+  // and you can use it when contacting us regarding a specific request.
+  string id = 1;
+
+  // The choices of the model.
+  repeated ChoiceChunk choices = 2;
+
+  // A UNIX timestamp (UTC) indicating when the response object was created.
+  // The timestamp is taken when the model starts generating response.
+  google.protobuf.Timestamp created = 3;
+
+  // The name of the model used for the request. This model name contains
+  // the actual model name used rather than any aliases.
+  // This means the this can be `grok-2-1212` even when the request was
+  // specifying `grok-2-latest`.
+  string model = 4;
+
+  // This fingerprint represents the backend configuration that the model runs
+  // with.
+  string system_fingerprint = 5;
+
+  // The total number of tokens consumed when this chunk was streamed. Note that
+  // this is not the final number of tokens billed unless this is the last chunk
+  // in the stream.
+  SamplingUsage usage = 6;
+
+  /// List of all the external pages used by the model to answer. Only populated for the last chunk.
+  // This is only present when live search is enabled, (That is `SearchParameters` have been defined in `GetCompletionsRequest`).
+  repeated string citations = 7;
+}
+
+// Response from GetDeferredCompletion, including the response if the completion
+// request has been processed without error.
+message GetDeferredCompletionResponse {
+  // Current status of the request.
+  DeferredStatus status = 2;
+
+  // Response. Only present if `status=DONE`
+  optional GetChatCompletionResponse response = 1;
+}
+
+// Contains the response generated by the model.
+message Choice {
+  // Indicating why the model stopped sampling.
+  FinishReason finish_reason = 1;
+
+  // The index of this choice in the list of choices. If you set `n > 1` on your
+  // request, you will receive most than one choice in your response.
+  int32 index = 2;
+
+  // The actual message generated by the model.
+  CompletionMessage message = 3;
+
+  // The log probabilities of the sampling.
+  LogProbs logprobs = 4;
+}
+
+// Holds the model output (i.e. the result of the sampling process).
+message CompletionMessage {
+  // The generated text based on the input prompt.
+  string content = 1;
+
+  // Reasoning trace the model produced before issuing the final answer.
+  string reasoning_content = 4;
+
+  // The role of the message author. Will always default to "assistant".
+  MessageRole role = 2;
+
+  // The tools that the assistant wants to call.
+  repeated ToolCall tool_calls = 3;
+}
+
+// Holds the differences (deltas) that when concatenated make up the entire
+// agent response.
+message ChoiceChunk {
+  // The actual text differences that need to be accumulated on the client.
+  Delta delta = 1;
+
+  // The log probability of the choice.
+  LogProbs logprobs = 2;
+
+  // Indicating why the model stopped sampling.
+  FinishReason finish_reason = 3;
+
+  // The index of this choice in the list of choices. If you set `n > 1` on your
+  // request, you will receive most than one choice in your response.
+  int32 index = 4;
+}
+
+// The delta of a streaming response.
+message Delta {
+  // The main model output/answer.
+  string content = 1;
+
+  // Part of the model's reasoning trace.
+  string reasoning_content = 4;
+
+  // The entity type who sent the message. For example, a message can be sent by
+  // a user or the assistant.
+  MessageRole role = 2;
+
+  // A list of tool calls if tool call is requested by the model.
+  repeated ToolCall tool_calls = 3;
+}
+
+// Holding the log probabilities of the sampling.
+message LogProbs {
+  // A list of log probability entries, each corresponding to a sampled token
+  // and its associated data.
+  repeated LogProb content = 1;
+}
+
+// Represents the logarithmic probability and metadata for a single sampled
+// token.
+message LogProb {
+  // The text representation of the sampled token.
+  string token = 1;
+
+  // The logarithmic probability of this token being sampled, given the prior
+  // context.
+  float logprob = 2;
+
+  // The raw byte representation of the token, useful for handling non-text or
+  // encoded data.
+  bytes bytes = 3;
+
+  // A list of the top alternative tokens and their log probabilities at this
+  // sampling step.
+  repeated TopLogProb top_logprobs = 4;
+}
+
+// Represents an alternative token and its log probability among the top
+// candidates.
+message TopLogProb {
+  // The text representation of an alternative token considered by the model.
+  string token = 1;
+
+  // The logarithmic probability of this alternative token being sampled.
+  float logprob = 2;
+
+  // The raw byte representation of the alternative token.
+  bytes bytes = 3;
+}
+
+// Holds a single content element that is part of an input message.
+message Content {
+  oneof content {
+    // The content is a pure text message.
+    string text = 1;
+
+    // The content is a single image.
+    ImageUrlContent image_url = 2;
+  }
+}
+
+// A message in a conversation. This message is part of the model input. Each
+// message originates from a "role", which indicates the entity type who sent
+// the message. Messages can contain multiple content elements such as text and
+// images.
+message Message {
+  // The content of the message. Some model support multi-modal message contents
+  // that consist of text and images. At least one content element must be set
+  // for each message.
+  repeated Content content = 1;
+
+  // The entity type who sent the message. For example, a message can be sent by
+  // a user or the assistant.
+  MessageRole role = 2;
+
+  // The name of the entity who sent the message. The name can only be set if
+  // the role is ROLE_USER.
+  string name = 3;
+
+  // The tools that the assistant wants to call.
+  repeated ToolCall tool_calls = 4;
+}
+
+enum MessageRole {
+  // Default value / invalid role.
+  INVALID_ROLE = 0;
+
+  // User role.
+  ROLE_USER = 1;
+
+  // Assistant role, normally the response from the model.
+  ROLE_ASSISTANT = 2;
+
+  // System role, typically for system instructions.
+  ROLE_SYSTEM = 3;
+
+  // Indicates a return from a tool call. Deprecated in favor of ROLE_TOOL.
+  ROLE_FUNCTION = 4 [deprecated = true];
+
+  // Indicates a return from a tool call.
+  ROLE_TOOL = 5;
+}
+
+enum ReasoningEffort {
+  INVALID_EFFORT = 0;
+  EFFORT_LOW = 1;
+  EFFORT_MEDIUM = 2;
+  EFFORT_HIGH = 3;
+}
+
+enum ToolMode {
+  // Invalid tool mode.
+  TOOL_MODE_INVALID = 0;
+
+  // Let the model decide if a tool shall be used.
+  TOOL_MODE_AUTO = 1;
+
+  // Force the model to not use tools.
+  TOOL_MODE_NONE = 2;
+
+  // Force the model to use tools.
+  TOOL_MODE_REQUIRED = 3;
+}
+
+enum FormatType {
+  // Invalid format type.
+  FORMAT_TYPE_INVALID = 0;
+  // Raw text.
+  FORMAT_TYPE_TEXT = 1;
+  // Any JSON object.
+  FORMAT_TYPE_JSON_OBJECT = 2;
+  // Follow a JSON schema.
+  FORMAT_TYPE_JSON_SCHEMA = 3;
+}
+
+message ToolChoice {
+  oneof tool_choice {
+    // Force the model to perform in a given mode.
+    ToolMode mode = 1;
+
+    // Force the model to call a particular function.
+    string function_name = 2;
+  }
+}
+
+message Tool {
+  oneof tool {
+    // Only functions are supported for now
+    Function function = 1;
+  }
+}
+
+message Function {
+  // Name of the function.
+  string name = 1;
+
+  // Description of the function.
+  string description = 2;
+
+  // Not supported: Only kept for compatibility reasons.
+  bool strict = 3;
+
+  // The parameters the functions accepts, described as a JSON Schema object.
+  string parameters = 4;
+}
+
+// Content of a tool call, typically in a response from model.
+message ToolCall {
+  // The ID of the tool call.
+  string id = 1;
+
+  // Information regarding invoking the tool call.
+  oneof tool {
+    FunctionCall function = 10;
+  }
+}
+
+// Tool call information.
+message FunctionCall {
+  // Name of the function to call.
+  string name = 1;
+
+  // Arguments used to call the function as json string.
+  string arguments = 2;
+}
+
+// The response format for structured response.
+message ResponseFormat {
+  // Type of format expected for the response. Default to `FORMAT_TYPE_TEXT`
+  FormatType format_type = 1;
+
+  // The JSON schema that the response should conform to.
+  // Only considered if `format_type` is `FORMAT_TYPE_JSON_SCHEMA`.
+  optional string schema = 2;
+}
+
+// Mode to control the web search.
+enum SearchMode {
+  INVALID_SEARCH_MODE = 0;
+  OFF_SEARCH_MODE = 1;
+  ON_SEARCH_MODE = 2;
+  AUTO_SEARCH_MODE = 3;
+}
+
+// Parameters for configuring search behavior in a chat request.
+//
+// This message allows customization of search functionality when using models that support
+// searching external sources for information. You can specify which sources to search,
+// set date ranges for relevant content, control the search mode, and configure how
+// results are returned.
+message SearchParameters {
+  // Controls when search is performed. Possible values are:
+  //   - OFF_SEARCH_MODE (default): No search is performed, and no external data will be considered.
+  //   - ON_SEARCH_MODE: Search is always performed when sampling from the model and the model will search in every source provided for relevant data.
+  //   - AUTO_SEARCH_MODE: The model decides whether to perform a search based on the prompt and which sources to use.
+  SearchMode mode = 1;
+  
+  // A list of search sources to query, such as web, news, X, or RSS feeds.
+  // Multiple sources can be specified. If no sources are provided, the model will default to
+  // searching the web and X.
+  repeated Source sources = 9;
+  
+  // Optional start date for search results in ISO-8601 YYYY-MM-DD format (e.g., "2024-05-24").
+  // Only content after this date will be considered. Defaults to unset (no start date restriction).
+  // See https://en.wikipedia.org/wiki/ISO_8601 for format details.
+  google.protobuf.Timestamp from_date = 4;
+  
+  // Optional end date for search results in ISO-8601 YYYY-MM-DD format (e.g., "2024-12-24").
+  // Only content before this date will be considered. Defaults to unset (no end date restriction).
+  // See https://en.wikipedia.org/wiki/ISO_8601 for format details.
+  google.protobuf.Timestamp to_date = 5;
+  
+  // If set to true, the model will return a list of citations (URLs or references)
+  // to the sources used in generating the response. Defaults to true.
+  bool return_citations = 7;
+  
+  // Optional limit on the number of search results to consider
+  // when generating a response. Must be in the range [1, 30]. Defaults to 15.
+  optional int32 max_search_results = 8;
+}
+
+// Defines a source for search requests, specifying the type of content to search.
+// This message acts as a container for different types of search sources. Only one type
+// of source can be specified per instance using the oneof field.
+message Source {
+  oneof source {
+    // Configuration for searching online web content. Use this to search general websites
+    // with options to filter by country, exclude specific domains, or only allow specific domains.
+    WebSource web = 1;
+    
+    // Configuration for searching recent articles and reports from news outlets.
+    // Useful for current events or topic-specific updates.
+    NewsSource news = 2;
+    
+    // Configuration for searching content on X. Allows focusing on
+    // specific user handles for targeted content.
+    XSource x = 3;
+    
+    // Configuration for searching content from RSS feeds. Requires specific feed URLs
+    // to query.
+    RssSource rss = 4;
+  }
+}
+
+// Configuration for a web search source in search requests.
+//
+// This message configures a source for searching online web content. It allows specification
+// of regional content through country codes and filtering of results by excluding or allowing
+// specific websites.
+message WebSource {
+  // List of website domains (without protocol specification or subdomains) to exclude from search results (e.g., ["example.com"]). 
+  // Use this to prevent results from unwanted sites. A maximum of 5 websites can be excluded.
+  // This parameter cannot be set together with `allowed_websites`.
+  repeated string excluded_websites = 2;
+  
+  // List of website domains (without protocol specification or subdomains)
+  // to restrict search results to (e.g., ["example.com"]). A maximum of 5 websites can be allowed.
+  // Use this as a whitelist to limit results to only these specific sites; no other websites will
+  // be considered. If no relevant information is found on these websites, the number of results
+  // returned might be smaller than `max_search_results` set in `SearchParameters`. Note: This
+  // parameter cannot be set together with `excluded_websites`.
+  repeated string allowed_websites = 5;
+  
+  // Optional ISO alpha-2 country code (e.g., "BE" for Belgium) to limit search results
+  // to content from a specific region or country. Defaults to unset (global search).
+  // See https://en.wikipedia.org/wiki/ISO_3166-2 for valid codes.
+  optional string country = 3;
+  
+  // Whether to exclude adult content from the search results. Defaults to true.
+  bool safe_search = 4;
+}
+
+// Configuration for a news search source in search requests.
+//
+// This message configures a source for searching recent articles and reports from news outlets.
+// It is useful for obtaining current events or topic-specific updates with regional filtering.
+message NewsSource {
+  // List of website domains (without protocol specification or subdomains)
+  // to exclude from search results (e.g., ["example.com"]). A maximum of 5 websites can be excluded.
+  // Use this to prevent results from specific news sites. Defaults to unset (no exclusions).
+  repeated string excluded_websites = 2;
+  
+  // Optional ISO alpha-2 country code (e.g., "BE" for Belgium) to limit search results
+  // to news from a specific region or country. Defaults to unset (global news).
+  // See https://en.wikipedia.org/wiki/ISO_3166-2 for valid codes.
+  optional string country = 3;
+  
+  // Whether to exclude adult content from the search results. Defaults to true.
+  bool safe_search = 4;
+}
+
+// Configuration for an X (formerly Twitter) search source in search requests.
+//
+// This message configures a source for searching content on X. It allows focusing the search
+// on specific user handles to retrieve targeted posts and interactions.
+message XSource {
+  // List of X usernames (without the '@' symbol) to limit search results to posts
+  // from specific accounts (e.g., ["xai"]). Defaults to unset (general X content).
+  repeated string x_handles = 6;
+}
+
+// Configuration for an RSS search source in search requests.
+//
+// This message configures a source for searching content from RSS feeds. It requires specific
+// feed URLs to query for content updates.
+message RssSource {
+  // List of RSS feed URLs to search. Each URL must point to a valid RSS feed.
+  // At least one link must be provided.
+  repeated string links = 1;
+}

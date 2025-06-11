@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// An API service that let users get details of available models on the
+// platform.
+service Models {
+  // Lists all language models available to your team (based on the API key).
+  rpc ListLanguageModels(google.protobuf.Empty) returns (ListLanguageModelsResponse) {}
+
+  // Lists all embedding models available to your team (based on the API key).
+  rpc ListEmbeddingModels(google.protobuf.Empty) returns (ListEmbeddingModelsResponse) {}
+
+  // Lists all image generation models available to your team (based on the API key).
+  rpc ListImageGenerationModels(google.protobuf.Empty) returns (ListImageGenerationModelsResponse) {}
+
+  // Get details of a specific language model by model name.
+  rpc GetLanguageModel(GetModelRequest) returns (LanguageModel) {}
+
+  // Get details of a specific embedding model by model name.
+  rpc GetEmbeddingModel(GetModelRequest) returns (EmbeddingModel) {}
+
+  // Get details of a specific image generation model by model name.
+  rpc GetImageGenerationModel(GetModelRequest) returns (ImageGenerationModel) {}
+}
+
+// Request to get details of a specific model by name.
+message GetModelRequest {
+  // The name of the model to retrieve details about.
+  string name = 1;
+}
+
+// Describes a language model available on the platform.
+message LanguageModel {
+  // The model name used in API requests/responses.
+  string name = 1;
+
+  // The aliases of the name, which can also be used in lieu of name in the API
+  // requests.
+  repeated string aliases = 11;
+
+  // The version number of this model. Used to identify minor updates when
+  // the model name is not changed.
+  string version = 2;
+
+  // The supported input modalities of the model.
+  repeated Modality input_modalities = 3;
+
+  // The supported output modalities of the model.
+  repeated Modality output_modalities = 4;
+
+  // The price (in 1/100 USD cents) per one million text prompt tokens.
+  int64 prompt_text_token_price = 5;
+
+  // The price (in 1/100 USD cents) per one million image prompt tokens.
+  int64 prompt_image_token_price = 6;
+
+  // The price (in USD cents) per 100 million cached text prompt tokens.
+  int64 cached_prompt_token_price = 12;
+
+  // The price (in 1/100 USD cents) per one million text completion token.
+  int64 completion_text_token_price = 7;
+
+  // The price (in 1/100 USD cents) per one million searches.
+  int64 search_price = 13;
+
+  // The creation time of the model.
+  google.protobuf.Timestamp created = 8;
+
+  // Maximum length of the prompt/input (this includes tokens of all kinds).
+  // This is typically known as the context length of the model.
+  int32 max_prompt_length = 9;
+
+  // Fingerprint of the unique configuration of the model.
+  string system_fingerprint = 10;
+}
+
+// Response from ListLanguageModels including a list of language models.
+message ListLanguageModelsResponse {
+  // A list of language models.
+  repeated LanguageModel models = 1;
+}
+
+// Modalities supported by a model input/output.
+enum Modality {
+  // Invalid modality.
+  INVALID_MODALITY = 0;
+
+  // Text input/output.
+  TEXT = 1;
+
+  // Image input/output.
+  IMAGE = 2;
+
+  // Embedding input/output.
+  EMBEDDING = 3;
+}
+
+// Describes an embedding model available on the platform.
+message EmbeddingModel {
+  // The name under which the model is available in the API.
+  string name = 1;
+
+  // The aliases of the name, which can also be used in lieu of name in the API
+  // requests.
+  repeated string aliases = 11;
+
+  // The version number of this model. Used to identify minor updates when
+  // the model name is not changed.
+  string version = 2;
+
+  // The supported input modalities of the model.
+  repeated Modality input_modalities = 3;
+
+  // The supported output modalities of the model.
+  repeated Modality output_modalities = 4;
+
+  // The price (in 1/100 USD cents) per one million text prompt tokens.
+  int64 prompt_text_token_price = 5;
+
+  // The price (in 1/100 USD cents) per one million image prompt tokens.
+  int64 prompt_image_token_price = 6;
+
+  // The creation time of the model.
+  google.protobuf.Timestamp created = 7;
+
+  // Fingerprint of the unique configuration of the model.
+  string system_fingerprint = 8;
+}
+
+// Response from ListEmbeddingModels including a list of embedding models.
+message ListEmbeddingModelsResponse {
+  // A list of embedding model(s).
+  repeated EmbeddingModel models = 1;
+}
+
+// Describes a language model available on the platform.
+message ImageGenerationModel {
+  reserved 4, 5, 7;
+
+  // The model name used in API requests/responses.
+  string name = 1;
+
+  // The aliases of the name, which can also be used in lieu of name in the API
+  // requests.
+  repeated string aliases = 11;
+
+  // The version number of this model. Used to identify minor updates when
+  // the model name is not changed.
+  string version = 2;
+
+  // The supported input modalities of the model.
+  repeated Modality input_modalities = 3;
+
+  // The supported output modalities of the model.
+  repeated Modality output_modalities = 6;
+
+  // The price (in USD cents) per image.
+  int64 image_price = 12;
+
+  // When the language model was created.
+  google.protobuf.Timestamp created = 8;
+
+  // Maximum length of the prompt/input (this includes tokens of all kinds).
+  // This is typically known as the context length of the model.
+  int32 max_prompt_length = 9;
+
+  // Fingerprint of the unique configuration of the model.
+  string system_fingerprint = 10;
+}
+
+// Response from ListImageGenerationModels including a list of image generation
+// models.
+message ListImageGenerationModelsResponse {
+  // A list of image generation models.
+  repeated ImageGenerationModel models = 1;
+}

@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// An API service to check status of an API key.
+service Auth {
+  // Returns some information about an API key.
+  rpc get_api_key_info(google.protobuf.Empty) returns (ApiKey) {}
+}
+
+// API key information.
+message ApiKey {
+  // A redacted API key. The full API key will not be displayed after it has
+  // been created.
+  string redacted_api_key = 1;
+
+  // ID of the user who created this API key.
+  string user_id = 3;
+
+  // Human-readable name for the API key.
+  string name = 4;
+
+  // Unix timestamp when the API key was created.
+  google.protobuf.Timestamp create_time = 5;
+
+  // Unix timestamp when the API key was last modified.
+  google.protobuf.Timestamp modify_time = 9;
+
+  // ID of the last user who modified the API key
+  string modified_by = 11;
+
+  // ID of the team this API key belongs to.
+  string team_id = 6;
+
+  // Access Control Lists (ACLs) associated with this key.
+  // These indicate the resources that the API key has access to.
+  repeated string acls = 7;
+
+  // The ID of the API key. This is different from the API key itself.
+  string api_key_id = 8;
+
+  // Whether the API key is currently blocked from making API requests.
+  bool api_key_blocked = 10;
+
+  // Whether the team is currently blocked from making API requests.
+  bool team_blocked = 13;
+
+  // Whether the API key is currently disabled.
+  bool disabled = 12;
+}

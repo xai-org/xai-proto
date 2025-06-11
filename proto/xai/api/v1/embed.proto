@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "xai/api/v1/image.proto";
+import "xai/api/v1/usage.proto";
+
+// An API service for interaction with available embedding models.
+service Embedder {
+  // Produces one embedding for each input object. The size of the produced
+  // feature vectors depends on the chosen model.
+  rpc Embed(EmbedRequest) returns (EmbedResponse) {}
+}
+
+// Request message for generating embeddings.
+message EmbedRequest {
+  // The entities to embed. Note that not every model supports images and text.
+  // Some models are text-only and some are image-only. You can at most embed
+  // 128 inputs in a single request.
+  repeated EmbedInput input = 1;
+
+  // Name or alias of the embedding model to use.
+  string model = 2;
+
+  // Format of the returned embeddings.
+  EmbedEncodingFormat encoding_format = 3;
+
+  // An opaque string supplied by the API client (customer) to identify a user.
+  // The string will be stored in the logs and can be used in customer service
+  // requests to identify certain requests.
+  string user = 4;
+}
+
+// Input content to be embedded.
+message EmbedInput {
+  oneof input {
+    // A string to be embedded.
+    string string = 1;
+
+    // An image to be embedded.
+    ImageUrlContent image_url = 2;
+  }
+}
+
+// Response object for the `Embed` RPC.
+message EmbedResponse {
+  // An identifier of this request. The same ID will be used in your billing
+  // records.
+  string id = 1;
+
+  // The embeddings generated from the inputs.
+  repeated Embedding embeddings = 2;
+
+  // The usage associated with this request.
+  EmbeddingUsage usage = 3;
+
+  // The name of the model used for the request. This model name contains
+  // the actual model name used rather than any aliases.
+  // This means it can be `embed-0205` even when the request was specifying
+  // `embed-latest`.
+  string model = 4;
+
+  // This fingerprint represents the backend configuration that the model runs
+  // with.
+  string system_fingerprint = 5;
+}
+
+// Holds the embedding vector for a single embedding input.
+message Embedding {
+  // The index of the input this embedding was produced from.
+  int32 index = 1;
+
+  // The feature vectors derived from the inputs. Note that some inputs such as
+  // images may produce multiple feature vectors.
+  repeated FeatureVector embeddings = 2;
+}
+
+// A single feature vector.
+message FeatureVector {
+  // The feature vector encoded as an array of floats. Only populated if
+  // the encoding format is FORMAT_FLOAT.
+  repeated float float_array = 1 [packed = true];
+
+  // The feature vector encoded as a base64 string. Only populated if
+  // the encoding format is FORMAT_BASE64.
+  string base64_array = 2;
+}
+
+enum EmbedEncodingFormat {
+  // Invalid format.
+  FORMAT_INVALID = 0;
+
+  // Returns the embeddings as an array of floats.
+  FORMAT_FLOAT = 1;
+
+  // Returns the embeddings as a base64-encoded string.
+  FORMAT_BASE64 = 2;
+}
