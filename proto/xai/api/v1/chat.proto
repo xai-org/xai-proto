@@ -333,6 +333,9 @@ message Message {
   // for each message.
   repeated Content content = 1;
 
+  // Reasoning trace the model produced before issuing the final answer.
+  optional string reasoning_content = 5;
+
   // The entity type who sent the message. For example, a message can be sent by
   // a user or the assistant.
   MessageRole role = 2;
@@ -478,26 +481,26 @@ message SearchParameters {
   //   - ON_SEARCH_MODE: Search is always performed when sampling from the model and the model will search in every source provided for relevant data.
   //   - AUTO_SEARCH_MODE: The model decides whether to perform a search based on the prompt and which sources to use.
   SearchMode mode = 1;
-  
+
   // A list of search sources to query, such as web, news, X, or RSS feeds.
   // Multiple sources can be specified. If no sources are provided, the model will default to
   // searching the web and X.
   repeated Source sources = 9;
-  
+
   // Optional start date for search results in ISO-8601 YYYY-MM-DD format (e.g., "2024-05-24").
   // Only content after this date will be considered. Defaults to unset (no start date restriction).
   // See https://en.wikipedia.org/wiki/ISO_8601 for format details.
   google.protobuf.Timestamp from_date = 4;
-  
+
   // Optional end date for search results in ISO-8601 YYYY-MM-DD format (e.g., "2024-12-24").
   // Only content before this date will be considered. Defaults to unset (no end date restriction).
   // See https://en.wikipedia.org/wiki/ISO_8601 for format details.
   google.protobuf.Timestamp to_date = 5;
-  
+
   // If set to true, the model will return a list of citations (URLs or references)
   // to the sources used in generating the response. Defaults to true.
   bool return_citations = 7;
-  
+
   // Optional limit on the number of search results to consider
   // when generating a response. Must be in the range [1, 30]. Defaults to 15.
   optional int32 max_search_results = 8;
@@ -511,15 +514,15 @@ message Source {
     // Configuration for searching online web content. Use this to search general websites
     // with options to filter by country, exclude specific domains, or only allow specific domains.
     WebSource web = 1;
-    
+
     // Configuration for searching recent articles and reports from news outlets.
     // Useful for current events or topic-specific updates.
     NewsSource news = 2;
-    
+
     // Configuration for searching content on X. Allows focusing on
     // specific user handles for targeted content.
     XSource x = 3;
-    
+
     // Configuration for searching content from RSS feeds. Requires specific feed URLs
     // to query.
     RssSource rss = 4;
@@ -532,11 +535,11 @@ message Source {
 // of regional content through country codes and filtering of results by excluding or allowing
 // specific websites.
 message WebSource {
-  // List of website domains (without protocol specification or subdomains) to exclude from search results (e.g., ["example.com"]). 
+  // List of website domains (without protocol specification or subdomains) to exclude from search results (e.g., ["example.com"]).
   // Use this to prevent results from unwanted sites. A maximum of 5 websites can be excluded.
   // This parameter cannot be set together with `allowed_websites`.
   repeated string excluded_websites = 2;
-  
+
   // List of website domains (without protocol specification or subdomains)
   // to restrict search results to (e.g., ["example.com"]). A maximum of 5 websites can be allowed.
   // Use this as a whitelist to limit results to only these specific sites; no other websites will
@@ -544,12 +547,12 @@ message WebSource {
   // returned might be smaller than `max_search_results` set in `SearchParameters`. Note: This
   // parameter cannot be set together with `excluded_websites`.
   repeated string allowed_websites = 5;
-  
+
   // Optional ISO alpha-2 country code (e.g., "BE" for Belgium) to limit search results
   // to content from a specific region or country. Defaults to unset (global search).
   // See https://en.wikipedia.org/wiki/ISO_3166-2 for valid codes.
   optional string country = 3;
-  
+
   // Whether to exclude adult content from the search results. Defaults to true.
   bool safe_search = 4;
 }
@@ -563,12 +566,12 @@ message NewsSource {
   // to exclude from search results (e.g., ["example.com"]). A maximum of 5 websites can be excluded.
   // Use this to prevent results from specific news sites. Defaults to unset (no exclusions).
   repeated string excluded_websites = 2;
-  
+
   // Optional ISO alpha-2 country code (e.g., "BE" for Belgium) to limit search results
   // to news from a specific region or country. Defaults to unset (global news).
   // See https://en.wikipedia.org/wiki/ISO_3166-2 for valid codes.
   optional string country = 3;
-  
+
   // Whether to exclude adult content from the search results. Defaults to true.
   bool safe_search = 4;
 }

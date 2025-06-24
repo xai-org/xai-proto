@@ -78,21 +78,21 @@ message SampleTextRequest {
   // low values will make the model more deterministic.
   optional float top_p = 15;
 
-  // Number between -2.0 and 2.0. 
-  // Positive values penalize new tokens based on their existing frequency in the text so far, 
+  // Number between -2.0 and 2.0.
+  // Positive values penalize new tokens based on their existing frequency in the text so far,
   // decreasing the model's likelihood to repeat the same line verbatim.
   optional float frequency_penalty = 13;
-  
-  // Whether to return log probabilities of the output tokens or not. 
+
+  // Whether to return log probabilities of the output tokens or not.
   // If true, returns the log probabilities of each output token returned in the content of message.
   bool logprobs = 5;
 
   // Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
   // Not supported by grok-3 models.
   optional float presence_penalty = 9;
-  
-  // An integer between 0 and 8 specifying the number of most likely tokens to return at each token position, 
-  // each with an associated log probability. 
+
+  // An integer between 0 and 8 specifying the number of most likely tokens to return at each token position,
+  // each with an associated log probability.
   // logprobs must be set to true if this parameter is used.
   optional int32 top_logprobs = 6;
 
@@ -158,7 +158,7 @@ enum FinishReason {
 
   // A tool call is included in the response.
   REASON_TOOL_CALLS = 4;
-  
+
   // Time limit has been reached.
   REASON_TIME_LIMIT = 5;
 }
