@@ -581,9 +581,28 @@ message NewsSource {
 // This message configures a source for searching content on X. It allows focusing the search
 // on specific user handles to retrieve targeted posts and interactions.
 message XSource {
-  // List of X usernames (without the '@' symbol) to limit search results to posts
-  // from specific accounts (e.g., ["xai"]). Defaults to unset (general X content).
-  repeated string x_handles = 6;
+  reserved 6;
+
+  // Optional list of X usernames (without the '@' symbol) to limit search results to posts
+  // from specific accounts (e.g., ["xai"]). If set, only posts authored by these
+  // handles will be considered in the live search.
+  // This field can not be set together with `excluded_x_handles`.
+  // Defaults to unset (no exclusions).
+  repeated string included_x_handles = 7;
+
+  // Optional list of X usernames (without the '@' symbol) used to exclude posts from specific accounts.
+  // If set, posts authored by these handles will be excluded from the live search results.
+  // This field can not be set together with `included_x_handles`.
+  // Defaults to unset (no exclusions).
+  repeated string excluded_x_handles = 8;
+
+  // Optional post favorite count threshold. Defaults to unset (don't filter posts by post favorite count).
+  // If set, only posts with a favorite count greater than or equal to this threshold will be considered.
+  optional int32 post_favorite_count = 9;
+
+  // Optional post view count threshold. Defaults to unset (don't filter posts by post view count).
+  // If set, only posts with a view count greater than or equal to this threshold will be considered.
+  optional int32 post_view_count = 10;
 }
 
 // Configuration for an RSS search source in search requests.
