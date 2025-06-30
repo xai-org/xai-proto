@@ -49,7 +49,7 @@ These SDKs are available separately and provide a convenient, language-specific 
 
 Functional changes to the protobuf definitions are not accepted at this time, as these files are maintained by xAI to ensure compatibility with our API services. However, changes to improve documentation, fix typos, etc., are welcome. If you have feedback or suggestions, please contact xAI through the [official API support channels](support@x.ai).
 
-Please see the [contributing documentation](./CONTRIBUTING.MD) for full details on contributing to this repository.
+Please see the [contributing documentation](./CONTRIBUTING.md) for full details on contributing to this repository.
 
 ## License
 
