@@ -1,0 +1,14 @@
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.23.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/semgrep/pre-commit
+    rev: v1.127.1
+    hooks:
+      - id: semgrep-ci
+        stages: [pre-push]
+        args: ["ci", "--quiet"]

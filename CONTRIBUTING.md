@@ -21,14 +21,25 @@ The following sections are intended for xAI employees and contributors who are m
 
 ### Making Changes to Proto Files
 
-1. **Create a Branch**: Start by creating a new branch for your changes. Use a descriptive name that reflects the purpose of the change, such as `feature/add-new-service` or `bugfix/correct-field-type`.
+1. **Clone the Repository**: If you haven't already, clone the repository to your local machine using:
+   ```bash
+   git clone https://github.com/xai-org/xai-proto.git
+   cd xai-proto
+   ```
+
+2. **Set Up Development Pre-commit Hooks**: Ensure you have [uv](https://docs.astral.sh/uv/) installed, as it's required for installing/running pre-commit hooks. Then install the pre-commit hooks by running:
+   ```bash
+   uvx pre-commit install
+   ```
+
+3. **Create a Branch**: Start by creating a new branch for your changes. Use a descriptive name that reflects the purpose of the change, such as `feature/add-new-service` or `bugfix/correct-field-type`.
    ```bash
    git checkout -b <branch-name>
    ```
 
-2. **Modify Proto Files**: Make the necessary changes to the `.proto` files in the `proto` directory. Ensure that your changes align with the intended API design and follow the style guidelines enforced by Buf linting rules.
+4. **Modify Proto Files**: Make the necessary changes to the `.proto` files in the `proto` directory. Ensure that your changes align with the intended API design and follow the style guidelines enforced by Buf linting rules.
 
-3. **Update Documentation**: If your changes introduce new services, messages, or fields, update the relevant documentation within the `.proto` files and, if applicable, in the `README.md` to reflect these changes.
+5. **Update Documentation**: If your changes introduce new services, messages, or fields, update the relevant documentation within the `.proto` files and, if applicable, in the `README.md` to reflect these changes.
 
 ### Linting and Formatting
 
