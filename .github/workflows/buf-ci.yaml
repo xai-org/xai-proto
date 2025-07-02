@@ -1,19 +1,33 @@
-# This workflow runs checks on pull_requests only, without push and archive steps.
+# This workflow runs Buf CI checks on pull requests when proto files or this workflow file change.
 name: Buf CI
 on:
   pull_request:
     branches:
       - main
-    paths:
-      - proto/**
-      - .github/workflows/buf-ci.yaml
     types: [opened, synchronize, reopened, labeled, unlabeled]
+
 permissions:
   contents: read
-  pull-requests: write # allow the buf action to leave comments on the PR
+  pull-requests: write # Allow buf action to leave comments on the PR
+
 jobs:
   buf:
+    name: Buf CI
     runs-on: xai-proto-runner
     steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-action@5150a1eef5c10b6a5cf8a69fc872f24a09473195
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Use paths-filter to check if proto files or this workflow changed
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            proto_changed:
+              - 'proto/**'
+              - '.github/workflows/buf-ci.yaml'
+
+      # Only run buf checks if proto files or this workflow file changed
+      - name: Run Buf Checks
+        if: ${{ steps.filter.outputs.proto_changed == 'true' }}
+        uses: bufbuild/buf-action@5150a1eef5c10b6a5cf8a69fc872f24a09473195
