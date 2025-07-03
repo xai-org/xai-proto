@@ -13,15 +13,6 @@
 ### Removed
 - Features or functionalities that have been removed.
 
-## [Version Number] - YYYY-MM-DD
+## [v1.0.0](https://github.com/xai-org/xai-proto/releases/tag/v1.0.0) - 2025-06-30
 ### Added
-- List of new features or functionalities.
-
-### Changed
-- List of updates or modifications.
-
-### Fixed
-- List of bug fixes.
-
-### Removed
-- List of removed features or functionalities.
+- Initial v1.0.0 release of the public protobuf definitions for xAI's gRPC based APIs
