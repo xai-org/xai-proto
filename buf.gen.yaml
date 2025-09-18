@@ -24,3 +24,4 @@ plugins:
     out: gen/ts/v1
     include_imports: true
     opt: target=ts
+  
