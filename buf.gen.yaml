@@ -21,7 +21,7 @@ plugins:
 
   # typescript
   - remote: buf.build/bufbuild/es:v2.8.0
-    out: gen/ts/v1
+    out: gen/ts/v2
     include_imports: true
     opt: target=ts
   
