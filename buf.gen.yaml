@@ -18,3 +18,9 @@ plugins:
     out: gen/python/v5
   - remote: buf.build/protocolbuffers/pyi:v29.1
     out: gen/python/v5
+
+  # typescript
+  - remote: buf.build/bufbuild/es:v2.8.0
+    out: gen/ts/v1
+    include_imports: true
+    opt: target=ts
