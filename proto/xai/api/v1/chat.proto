@@ -565,9 +565,6 @@ message Source {
     // Configuration for searching content from RSS feeds. Requires specific feed URLs
     // to query.
     RssSource rss = 4;
-
-    // Configuration for searching content from embedded documents.
-    DocumentsSource documents = 5;
   }
 }
 
