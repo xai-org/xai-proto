@@ -4,6 +4,7 @@ package xai_api;
 
 import "google/protobuf/timestamp.proto";
 import "xai/api/v1/deferred.proto";
+import "xai/api/v1/documents.proto";
 import "xai/api/v1/image.proto";
 import "xai/api/v1/sample.proto";
 import "xai/api/v1/usage.proto";
@@ -25,6 +26,12 @@ service Chat {
 
   // Gets the result of a deferred completion started by calling `StartDeferredCompletion`.
   rpc GetDeferredCompletion(GetDeferredRequest) returns (GetDeferredCompletionResponse) {}
+
+  // Retrieve a stored response using the response ID.
+  rpc GetStoredCompletion(GetStoredCompletionRequest) returns (GetChatCompletionResponse) {}
+
+  // Delete a stored response using the response ID.
+  rpc DeleteStoredCompletion(DeleteStoredCompletionRequest) returns (DeleteStoredCompletionResponse) {}
 }
 
 message GetCompletionsRequest {
@@ -54,9 +61,12 @@ message GetCompletionsRequest {
   // - One of the `stop` sequences has been observed.
   // - The time limit exceeds.
   //
+  // Note that for reasoning models and models that support function calls, the
+  // limit is only applied to the main content and not to the reasoning content
+  // or function calls.
+  //
   // We recommend choosing a reasonable value to reduce the risk of accidental
-  // long-generations that consume many tokens. This included potentially hidden
-  // tokens required for reasoning or parsing.
+  // long-generations that consume many tokens.
   optional int32 max_tokens = 7;
 
   // A random seed used to make the sampling process deterministic. This is
@@ -134,6 +144,15 @@ message GetCompletionsRequest {
 
   /// If set to false, the model can perform maximum one tool call per response. Default to true.
   optional bool parallel_tool_calls = 21;
+
+  // Previous response id. The messages from this response must be chained.
+  optional string previous_response_id = 22;
+
+  // Whether to store request and responses. Default is false.
+  bool store_messages = 23;
+
+  // Whether to use encrypted thinking for thinking trace rehydration.
+  bool use_encrypted_content = 24;
 }
 
 message GetChatCompletionResponse {
@@ -165,6 +184,9 @@ message GetChatCompletionResponse {
   /// List of all the external pages (urls) used by the model to produce its final answer.
   // This is only present when live search is enabled, (That is `SearchParameters` have been defined in `GetCompletionsRequest`).
   repeated string citations = 10;
+
+  // Settings used while generating the response.
+  RequestSettings settings = 11;
 }
 
 message GetChatCompletionChunk {
@@ -238,6 +260,9 @@ message CompletionMessage {
 
   // The tools that the assistant wants to call.
   repeated ToolCall tool_calls = 3;
+
+  // The encrypted thinking content.
+  string encrypted_content = 5;
 }
 
 // Holds the differences (deltas) that when concatenated make up the entire
@@ -271,6 +296,9 @@ message Delta {
 
   // A list of tool calls if tool call is requested by the model.
   repeated ToolCall tool_calls = 3;
+
+  // The encrypted thinking content.
+  string encrypted_content = 5;
 }
 
 // Holding the log probabilities of the sampling.
@@ -346,6 +374,9 @@ message Message {
 
   // The tools that the assistant wants to call.
   repeated ToolCall tool_calls = 4;
+
+  // The encrypted thinking content.
+  string encrypted_content = 6;
 }
 
 enum MessageRole {
@@ -412,10 +443,18 @@ message ToolChoice {
 
 message Tool {
   oneof tool {
-    // Only functions are supported for now
+    // Tool Call defined by user
     Function function = 1;
+    // Built in web search.
+    WebSearch web_search = 3;
+    // Built in X search.
+    XSearch x_search = 4;
   }
 }
+
+message WebSearch {}
+
+message XSearch {}
 
 message Function {
   // Name of the function.
@@ -613,4 +652,90 @@ message RssSource {
   // List of RSS feed URLs to search. Each URL must point to a valid RSS feed.
   // At least one link must be provided.
   repeated string links = 1;
+}
+
+message RequestSettings {
+  // Max number of tokens that can be generated in a response. This includes both output and reasoning tokens.
+  optional int32 max_tokens = 1;
+
+  /// If set to false, the model can perform maximum one tool call. Default to true.
+  bool parallel_tool_calls = 2;
+
+  // The ID of the previous response from the model.
+  optional string previous_response_id = 3;
+
+  // Constrains effort on reasoning for reasoning models. Default to `EFFORT_MEDIUM`.
+  optional ReasoningEffort reasoning_effort = 4;
+
+  // A number between 0 and 2 used to control the variance of completions.
+  // The smaller the value, the more deterministic the model will become. For
+  // example, if we sample 1000 answers to the same prompt at a temperature of
+  // 0.001, then most of the 1000 answers will be identical. Conversely, if we
+  // conduct the same experiment at a temperature of 2, virtually no two answers
+  // will be identical. Note that increasing the temperature will cause
+  // the model to hallucinate more strongly.
+  optional float temperature = 5;
+
+  // Formatting constraint on the response.
+  ResponseFormat response_format = 6;
+
+  // Controls if the model can, should, or must not use tools.
+  ToolChoice tool_choice = 7;
+
+  // A list of tools the model may call. Currently, only functions are supported
+  // as a tool. Use this to provide a list of functions the model may generate
+  // JSON inputs for.
+  repeated Tool tools = 8;
+
+  // A number between 0 and 1 controlling the likelihood of the model to use
+  // less-common answers. Recall that the model produces a probability for
+  // each token. This means, for any choice of token there are thousands of
+  // possibilities to choose from. This parameter controls the "nucleus sampling
+  // algorithm". Instead of considering every possible token at every step, we
+  // only look at the K tokens who's probabilities exceed `top_p`.
+  // For example, if we set `top_p = 0.9`, then the set of tokens we actually
+  // sample from, will have a probability mass of at least 90%. In practice,
+  // low values will make the model more deterministic.
+  optional float top_p = 9;
+
+  // An opaque string supplied by the API client (customer) to identify a user.
+  // The string will be stored in the logs and can be used in customer service
+  // requests to identify certain requests.
+  string user = 10;
+
+  // Set the parameters to be used for realtime data. If not set, no realtime data will be acquired by the model.
+  optional SearchParameters search_parameters = 11;
+
+  // Whether to store request and responses. Default is false.
+  bool store_messages = 12;
+
+  // Whether to use encrypted thinking for thinking trace rehydration.
+  bool use_encrypted_content = 13;
+}
+
+// History of a user's messages.
+message ResponseHistory {
+  // The history of messages uptil (and including) the current response.
+  repeated Message messages = 1;
+
+  // The actual response.
+  GetChatCompletionResponse response = 2;
+}
+
+// Request to retrieve a stored completion response.
+message GetStoredCompletionRequest {
+  // The response id to be retrieved.
+  string response_id = 1;
+}
+
+// Request to delete a stored completion response.
+message DeleteStoredCompletionRequest {
+  // The response id to be deleted.
+  string response_id = 1;
+}
+
+// Response for deleting a stored completion.
+message DeleteStoredCompletionResponse {
+  // The response id that was deleted.
+  string response_id = 1;
 }
