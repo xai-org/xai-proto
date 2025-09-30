@@ -445,8 +445,6 @@ message Tool {
   oneof tool {
     // Tool Call defined by user
     Function function = 1;
-    // Built in live search
-    LiveSearch live_search = 2;
     // Built in web search.
     WebSearch web_search = 3;
     // Built in X search.
@@ -470,13 +468,6 @@ message Function {
 
   // The parameters the functions accepts, described as a JSON Schema object.
   string parameters = 4;
-}
-
-message LiveSearch {
-  // A list of search sources to query, such as web, news, X, or RSS feeds.
-  // Multiple sources can be specified. If no sources are provided, the model will default to
-  // searching the web and X.
-  repeated Source sources = 1;
 }
 
 // Content of a tool call, typically in a response from model.
