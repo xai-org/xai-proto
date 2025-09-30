@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package xai_api;
+
+service Documents {
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+}
+
+// RankingMetric is the metric to use for the search.
+enum RankingMetric {
+  RANKING_METRIC_UNKNOWN = 0;
+  RANKING_METRIC_L2_DISTANCE = 1;
+  RANKING_METRIC_COSINE_SIMILARITY = 2;
+}
+
+message SearchRequest {
+  // The query to search for which will be embedded using the
+  // same embedding model as the one used for the source to query.
+  string query = 1;
+  // The source to query.
+  DocumentsSource source = 2;
+  // The number of chunks to return.
+  // Will always return the top matching chunks.
+  // Optional, defaults to 10
+  optional int32 limit = 3;
+
+  // The ranking metric to use for the search. Defaults to RANK_METRIC_L2_DISTANCE.
+  optional RankingMetric ranking_metric = 4;
+
+  // User-defined instructions to be included in the search query. Defaults to generic search instructions.
+  optional string instructions = 5;
+}
+
+// SearchResponse message contains the results of a document search operation.
+// It returns a collection of matching document chunks sorted by relevance score.
+message SearchResponse {
+  // Collection of document chunks that match the search query, ordered by relevance score
+  // from highest to lowest.
+  repeated SearchMatch matches = 1;
+}
+
+// SearchMatch message represents a single document chunk that matches the search query.
+// It contains the document ID, chunk ID, content text, and a relevance score indicating
+// how well it matches the query.
+message SearchMatch {
+  // Unique identifier of the document that contains the matching chunk.
+  string file_id = 1;
+
+  // Unique identifier of the specific chunk within the document that matched the search query.
+  string chunk_id = 2;
+
+  // The actual text content of the matching chunk that can be presented to the user.
+  string chunk_content = 3;
+
+  // Score is the score of the chunk, which is determined by the ranking metric.
+  // For L2 distance, lower scores indicate better matches. Range is [0, inf).
+  // For cosine similarity, higher scores indicate better matches. Range is [0, 1].
+  float score = 4;
+
+  // The ID(s) of the collection(s) to which this document belongs.
+  repeated string collection_ids = 5;
+}
+
+// Configuration for a documents sources in search requests.
+//
+// This message configures a source for search content within documents or collections of documents.
+// Those documents must be uploaded through the management API or directly on the xAI console:
+// https://console.x.ai.
+message DocumentsSource {
+  // IDs of collections to use.
+  repeated string collection_ids = 1;
+}
