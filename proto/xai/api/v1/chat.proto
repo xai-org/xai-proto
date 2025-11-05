@@ -462,6 +462,8 @@ message Tool {
     CollectionsSearch collections_search = 6;
     // A remote MCP server to use.
     MCP mcp = 7;
+    // Built in document search.
+    DocumentSearch document_search = 8;
   }
 }
 
@@ -543,6 +545,11 @@ message CollectionsSearch {
   optional int32 limit = 2;
 }
 
+message DocumentSearch {
+  // Optional number of files to limit the search to.
+  optional int32 limit = 2;
+}
+
 message Function {
   // Name of the function.
   string name = 1;
@@ -585,6 +592,20 @@ enum ToolCallType {
   TOOL_CALL_TYPE_MCP_TOOL = 6;
 }
 
+enum ToolCallStatus {
+  // The tool call is in progress.
+  TOOL_CALL_STATUS_IN_PROGRESS = 0;
+
+  // The tool call is completed.
+  TOOL_CALL_STATUS_COMPLETED = 1;
+
+  // The tool call is incomplete.
+  TOOL_CALL_STATUS_INCOMPLETE = 2;
+
+  // The tool call is failed.
+  TOOL_CALL_STATUS_FAILED = 3;
+}
+
 // Content of a tool call, typically in a response from model.
 message ToolCall {
   // The ID of the tool call.
@@ -593,6 +614,12 @@ message ToolCall {
   // Information to indicate whether the tool call needs to be executed on client side or server side.
   // By default, it will be a client-side tool call if not specified.
   ToolCallType type = 2;
+
+  // Status of the tool call.
+  ToolCallStatus status = 3;
+
+  // Error message if the tool call is failed.
+  optional string error_message = 4;
 
   // Information regarding invoking the tool call.
   oneof tool {
