@@ -32,6 +32,9 @@ message SamplingUsage {
   // e.g. If a live search query returns citations from both X and Web and news sources, this will be 3.
   // If it returns citations from only X, this will be 1.
   int32 num_sources_used = 8;
+
+  // List of server side tools called.
+  repeated ServerSideTool server_side_tools_used = 9;
 }
 
 // Usage of embedding models.
@@ -41,4 +44,15 @@ message EmbeddingUsage {
 
   // The number of feature vectors produced from image inputs.
   int32 num_image_embeddings = 2;
+}
+
+enum ServerSideTool {
+  SERVER_SIDE_TOOL_INVALID = 0;
+  SERVER_SIDE_TOOL_WEB_SEARCH = 1;
+  SERVER_SIDE_TOOL_X_SEARCH = 2;
+  SERVER_SIDE_TOOL_CODE_EXECUTION = 3;
+  SERVER_SIDE_TOOL_VIEW_IMAGE = 4;
+  SERVER_SIDE_TOOL_VIEW_X_VIDEO = 5;
+  SERVER_SIDE_TOOL_COLLECTIONS_SEARCH = 6;
+  SERVER_SIDE_TOOL_MCP = 7;
 }
