@@ -7,7 +7,6 @@ package prod.clickhouse_analytics;
 
 import "google/protobuf/timestamp.proto";
 
-
 // Time series are created by aggregating value into buckets we call `TimeUnit`.
 enum TimeUnit {
   TIME_UNIT_INVALID = 0;

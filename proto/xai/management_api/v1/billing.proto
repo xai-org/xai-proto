@@ -3,8 +3,8 @@ package prod_mc_billing;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-import "xai/shared/billing/types.proto";
 import "xai/shared/analytics/analytics.proto";
+import "xai/shared/billing/types.proto";
 
 // gRPC API service to interact with the xAI billing system.
 service UISvc {
@@ -15,30 +15,25 @@ service UISvc {
   rpc GetBillingInfo(GetBillingInfoReq) returns (GetBillingInfoResp) {}
 
   // List payment methods of a team. You can add or delete the payment methods on https://console.x.ai.
-  rpc ListPaymentMethods(ListPaymentMethodsReq)
-      returns (ListPaymentMethodsResp) {}
+  rpc ListPaymentMethods(ListPaymentMethodsReq) returns (ListPaymentMethodsResp) {}
 
   // Set default payment method to an existing payment method on file.
-  rpc SetDefaultPaymentMethod(SetDefaultPaymentMethodReq)
-      returns (SetDefaultPaymentMethodResp) {}
+  rpc SetDefaultPaymentMethod(SetDefaultPaymentMethodReq) returns (SetDefaultPaymentMethodResp) {}
 
   // Preview the amount to pay for postpaid usage in the current billing period.
   rpc GetAmountToPay(GetAmountToPayReq) returns (GetAmountToPayResp) {}
 
   // Get historical usage of the API over a time period, aggregated by fields.
-  rpc AnalyzeBillingItems(AnalyzeBillingItemsRequest)
-      returns (prod.clickhouse_analytics.AnalyticsResponse) {}
+  rpc AnalyzeBillingItems(AnalyzeBillingItemsRequest) returns (prod.clickhouse_analytics.AnalyticsResponse) {}
 
   // List invoices that belong to a team.
   rpc ListInvoices(ListInvoicesReq) returns (ListInvoicesResp) {}
 
   // List the prepaid credit balance and balance changes of a team.
-  rpc ListPrepaidBalanceChanges(ListPrepaidBalanceChangesReq)
-      returns (ListPrepaidBalanceChangesResp) {}
+  rpc ListPrepaidBalanceChanges(ListPrepaidBalanceChangesReq) returns (ListPrepaidBalanceChangesResp) {}
 
   // Top up prepaid credit using the default payment method.
-  rpc TopUpOrGetExistingPendingChange(TopUpOrGetExistingPendingChangeReq)
-      returns (TopUpOrGetExistingPendingChangeResp) {}
+  rpc TopUpOrGetExistingPendingChange(TopUpOrGetExistingPendingChangeReq) returns (TopUpOrGetExistingPendingChangeResp) {}
 
   // Get the postpaid monthly spending limits. The API will stop functioning once the team has consumed all of the
   // prepaid credits, and the postpaid usage amount has reached the user-set soft spending limit.
@@ -47,8 +42,7 @@ service UISvc {
   // Set the postpaid monthly spending limit of a team. This can be used to restrict the maximum amount of postpaid API
   // usage. Note this will not limit the amount of prepaid credit usage, and prepaid credits will always be consumed
   // before accruing postpaid usage. To use only prepaid credits, you can set this limit to 0.
-  rpc SetSoftSpendingLimit(SetSoftSpendingLimitReq)
-      returns (SetSoftSpendingLimitResp) {}
+  rpc SetSoftSpendingLimit(SetSoftSpendingLimitReq) returns (SetSoftSpendingLimitResp) {}
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -205,7 +199,7 @@ message BillingCycle {
 message ChargerAttempt {
   int32 ticket = 10;
   bool successful = 20;
-  string payment_method_id = 30;  // The payment method that was tried in this attempt.
+  string payment_method_id = 30; // The payment method that was tried in this attempt.
 }
 
 message MonthlyInvoiceBundle {
@@ -304,10 +298,10 @@ message PrepaidBalanceChange {
   // The reason for the change.
   enum ChangeOrigin {
     INVALID_ORIGIN = 0;
-    PURCHASE = 10;  // Purchase by user. `amount` field will be negative.
-    SPEND = 20;     // Spending by user. `amount` field will be positive.
-    REFUND = 30;    // A refund issued to user. `amount` field will be negative.
-    MANUAL = 40;  // Can be either positive or negative, performed by xAI staff.
+    PURCHASE = 10; // Purchase by user. `amount` field will be negative.
+    SPEND = 20; // Spending by user. `amount` field will be positive.
+    REFUND = 30; // A refund issued to user. `amount` field will be negative.
+    MANUAL = 40; // Can be either positive or negative, performed by xAI staff.
   }
   // Status of the top up.
   enum TopUpStatus {
@@ -367,8 +361,7 @@ message TopUpOrGetExistingPendingChangeReq {
   string team_id = 10;
 
   // Amount of prepaid credit to top up. Can be any integer and we will disregard the sign.
-  prod_charger.Cent amount =
-      20;
+  prod_charger.Cent amount = 20;
 }
 
 // Response for prepaid credit top up.
