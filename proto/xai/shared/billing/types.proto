@@ -1,0 +1,104 @@
+syntax = "proto3";
+package prod_charger;
+
+// =====================================================================================================================
+// Cent
+
+// Representation of USD Cents.
+message Cent {
+  int64 val = 1;
+}
+
+// =====================================================================================================================
+// Payment method types
+
+// Payment method types.
+enum PaymentMethodType {
+  UNKNOWN_PMT = 0;
+  CARD = 10;
+  CASHAPP = 20;
+  LINK = 30;
+  US_BANK_ACCOUNT = 40;
+}
+
+// Payment method types wrapper to allow repeated optional fields.
+message PaymentMethodTypes {
+  repeated PaymentMethodType payment_method_types = 1;
+}
+
+// =====================================================================================================================
+// Card Details
+
+// A redacted version of card details. The actual card details are handled by third-party payment providers.
+message Address {
+  // Address line 1 (e.g., street, PO Box, or company name).
+  string line1 = 10;
+  // Address line 2 (e.g., apartment, suite, unit, or building).
+  string line2 = 11;
+  // City, district, suburb, town, or village.
+  string city = 15;
+  // Two-letter country code ([ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)).
+  string country = 20;
+  // ZIP or postal code.
+  string postal_code = 30;
+  // State, county, province, or region.
+  string state = 40;
+}
+
+// Billing info.
+message BillingInfo {
+  // The customer's full name or business name.
+  string name = 10;
+  // The customer's address.
+  Address address = 20;
+  // The customer's email.
+  string email = 30;
+  // Customer Tax ID type on Stripe ([Stripe Reference](https://docs.stripe.com/api/tax_ids/customer_create))
+  string tax_id_type = 40;
+  // Customer Tax ID number on Stripe ([Stripe Reference](https://docs.stripe.com/api/tax_ids/customer_create))
+  string tax_number = 41;
+}
+
+// A redacted version of card details. The actual card details are handled by third-party payment providers.
+message CardDetails {
+  // Card brand.
+  // Can be `amex`, `diners`, `discover`, `eftpos_au`, `jcb`, `mastercard`, `unionpay`, `visa`, or `unknown`.
+  string brand = 10;
+
+  // Two-digit number representing the card's expiration month.
+  int64 exp_month = 20;
+  // Four-digit number representing the card's expiration year.
+  int64 exp_year = 30;
+
+  // The last four digits of the card.
+  string last4 = 40;
+}
+
+// ACH blocked reason.
+message UsBankAccountBlocked {
+  string network_code = 10;
+  string block_reason = 20;
+}
+
+// ACH details.
+message UsBankAccountDetails {
+  string bank_name = 10;
+  string last4 = 20;
+  string routing_number = 30;
+  UsBankAccountBlocked blocked = 40;
+}
+
+// Link payment details.
+message LinkDetails {
+  string email = 1;
+}
+
+// Payment method and details.
+message PaymentMethod {
+  string payment_method_id = 10;
+  BillingInfo billing_info = 20;
+  CardDetails card_details = 30;
+  UsBankAccountDetails us_bank_account_details = 31;
+  LinkDetails link_details = 32;
+  string payment_type = 40;
+}

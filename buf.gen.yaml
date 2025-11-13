@@ -23,5 +23,7 @@ plugins:
   - remote: buf.build/bufbuild/es:v2.8.0
     out: gen/ts/v2
     include_imports: true
-    opt: target=ts
+    opt:
+      - target=ts
+      - json_types=true
   

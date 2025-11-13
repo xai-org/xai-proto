@@ -1,0 +1,163 @@
+// This file defines a generic interface for aggregating numeric data stored in clickhouse.
+// The result is a set of time series (one per value and group) over a fixed time window.
+
+syntax = "proto3";
+
+package prod.clickhouse_analytics;
+
+import "google/protobuf/timestamp.proto";
+
+// Time series are created by aggregating value into buckets we call `TimeUnit`.
+enum TimeUnit {
+  TIME_UNIT_INVALID = 0;
+  TIME_UNIT_MONTH = 1;
+  TIME_UNIT_CALENDAR_WEEK = 2;
+  TIME_UNIT_DAY = 3;
+  TIME_UNIT_HOUR = 4;
+  TIME_UNIT_QUARTER_HOUR = 5;
+  TIME_UNIT_MINUTE = 6;
+  TIME_UNIT_SECOND = 7;
+  // None means having one single time bucket for all events.
+  // This can be used to count total number of events ever for example.
+  TIME_UNIT_NONE = 8;
+}
+
+// Each value is an aggregate of the individual values in the time bucket. Note that not every field
+// supports every aggregation method.
+enum Aggregation {
+  AGGREGATION_NONE = 0;
+  AGGREGATION_SUM = 1;
+  AGGREGATION_AVG = 2;
+  AGGREGATION_VAR = 3;
+  AGGREGATION_STD = 4;
+  AGGREGATION_MIN = 5;
+  AGGREGATION_MAX = 6;
+  AGGREGATION_P50 = 7;
+  AGGREGATION_P90 = 8;
+  AGGREGATION_P99 = 9;
+  AGGREGATION_P999 = 10;
+  AGGREGATION_COUNT = 11;
+  AGGREGATION_COUNT_DISTINCT = 12;
+}
+
+// Allows the user to specify a time range in their local timezone.
+message TimeRange {
+  // The from-time in the format YYYY-MM-DD HH:MM:SS.
+  string start_time = 1;
+  // The to-time in the format YYYY-MM-DD HH:MM:SS (not including).
+  string end_time = 2;
+  // The timezone that all timestamps are reported in.
+  // The timezone must be represented by the IANA time zone identifier (e.g. America/New_York).
+  string timezone = 3;
+}
+
+// Determines which values shall be measured and how they shall be aggregated.
+message Value {
+  // Name of the field to measure.
+  string name = 1;
+  // Aggregation method to use.
+  Aggregation aggregation = 2;
+}
+
+// Request body for analytics.
+message AnalyticsRequest {
+  // The range over which to return the time series.
+  TimeRange time_range = 1;
+
+  // The granularity of the returned aggregation.
+  TimeUnit time_unit = 2;
+
+  // Name of the fields to aggregate.
+  repeated Value values = 3;
+
+  // For each value of the group-by tuple, we return one time series.
+  repeated string group_by = 4;
+
+  // A conditions that filter the individual log items, which get analyzed.
+  // Syntax:
+  // (NOT) [field]:[operator][value] (AND|OR)
+  // Example:
+  //  api_key_id:0000-9999-9999-9999
+  //  usage:>100
+  //
+  // All filter conditions are combined using AND.
+  repeated string filters = 5;
+}
+
+// Response body for analytics.
+message AnalyticsResponse {
+  // For each value of the group-by clause, we return one time series.
+  repeated TimeSeries time_series = 1;
+
+  // If this is true, the maximum cardinality of the query has been reached and only a subset of
+  // results is returned.
+  bool limit_reached = 2;
+}
+
+// A time series is a sequence of values.
+message TimeSeries {
+  // Values of the fields that were grouped by.
+  repeated string group = 1;
+
+  // Values to group the time series by.
+  repeated string group_labels = 3;
+
+  // Data points ordered by timestamp. Data points are dense in the range provided (meaning we
+  // return one data point for every interval in the requested time range).
+  repeated DataPoint data_points = 2;
+}
+
+message DataPoint {
+  // The timestamp (in UTC) when the data point was recorded.
+  google.protobuf.Timestamp timestamp = 1;
+
+  // The values that were recorded at that datapoint.
+  repeated double values = 2;
+}
+
+// The analytics scheme specifies which fields can be measured, group by, and filtered by.
+message AnalyticsScheme {
+  // List of values that can be measured.
+  repeated ValueScheme values = 1;
+  // List of fields that can be filtered by.
+  repeated string filters = 2;
+  // List of fields that can be grouped by.
+  repeated string group_by = 3;
+}
+
+// Specifies a value and which aggregation methods it supports.
+message ValueScheme {
+  string name = 1;
+  repeated Aggregation aggregations = 2;
+}
+
+message StringRawValue {
+  string name = 1;
+  string value = 2;
+}
+
+message FloatRawValue {
+  string name = 1;
+  double value = 2;
+}
+
+// Generic representation of a Clickhouse row.
+message AnalyticsRow {
+  // Unique identifier for this log item. May or may not
+  // represent anything else in the system.
+  string log_id = 1;
+
+  // Values for numerical columns in the log.
+  repeated FloatRawValue values = 2;
+
+  // String values coming from the group-by fields.
+  repeated StringRawValue group_by_values = 3;
+
+  // String values coming from the filter-by fields.
+  // This is NOT deduplicated from `group_by_values`
+  // in case a column can be a filter and a group-by.
+  repeated StringRawValue filter_by_values = 4;
+
+  // The UTC timestamp when the data was recorded.
+  google.protobuf.Timestamp timestamp = 5;
+}

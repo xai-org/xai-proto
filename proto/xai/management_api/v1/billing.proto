@@ -1,0 +1,417 @@
+syntax = "proto3";
+package prod_mc_billing;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "xai/shared/analytics/analytics.proto";
+import "xai/shared/billing/types.proto";
+
+// gRPC API service to interact with the xAI billing system.
+service UISvc {
+  // Set billing information of a team.
+  rpc SetBillingInfo(SetBillingInfoReq) returns (SetBillingInfoResp) {}
+
+  // Get billing information of the team with given team ID.
+  rpc GetBillingInfo(GetBillingInfoReq) returns (GetBillingInfoResp) {}
+
+  // List payment methods of a team. You can add or delete the payment methods on https://console.x.ai.
+  rpc ListPaymentMethods(ListPaymentMethodsReq) returns (ListPaymentMethodsResp) {}
+
+  // Set default payment method to an existing payment method on file.
+  rpc SetDefaultPaymentMethod(SetDefaultPaymentMethodReq) returns (SetDefaultPaymentMethodResp) {}
+
+  // Preview the amount to pay for postpaid usage in the current billing period.
+  rpc GetAmountToPay(GetAmountToPayReq) returns (GetAmountToPayResp) {}
+
+  // Get historical usage of the API over a time period, aggregated by fields.
+  rpc AnalyzeBillingItems(AnalyzeBillingItemsRequest) returns (prod.clickhouse_analytics.AnalyticsResponse) {}
+
+  // List invoices that belong to a team.
+  rpc ListInvoices(ListInvoicesReq) returns (ListInvoicesResp) {}
+
+  // List the prepaid credit balance and balance changes of a team.
+  rpc ListPrepaidBalanceChanges(ListPrepaidBalanceChangesReq) returns (ListPrepaidBalanceChangesResp) {}
+
+  // Top up prepaid credit using the default payment method.
+  rpc TopUpOrGetExistingPendingChange(TopUpOrGetExistingPendingChangeReq) returns (TopUpOrGetExistingPendingChangeResp) {}
+
+  // Get the postpaid monthly spending limits. The API will stop functioning once the team has consumed all of the
+  // prepaid credits, and the postpaid usage amount has reached the user-set soft spending limit.
+  rpc GetSpendingLimits(GetSpendingLimitsReq) returns (GetSpendingLimitsResp) {}
+
+  // Set the postpaid monthly spending limit of a team. This can be used to restrict the maximum amount of postpaid API
+  // usage. Note this will not limit the amount of prepaid credit usage, and prepaid credits will always be consumed
+  // before accruing postpaid usage. To use only prepaid credits, you can set this limit to 0.
+  rpc SetSoftSpendingLimit(SetSoftSpendingLimitReq) returns (SetSoftSpendingLimitResp) {}
+}
+
+// ------------------------------------------------------------------------------------------------
+// SetBillingInfo
+
+// Request to set the billing information on the team.
+message SetBillingInfoReq {
+  // Team ID of the team.
+  string team_id = 1;
+  // Billing information for the team to set.
+  prod_charger.BillingInfo billing_info = 10;
+}
+
+// Response of setting the billing information on the team.
+message SetBillingInfoResp {}
+
+// ------------------------------------------------------------------------------------------------
+// GetBillingInfo
+
+//  Request for getting billing information.
+message GetBillingInfoReq {
+  // Team ID of the team.
+  string team_id = 1;
+}
+
+// Response containing the billing information of the team.
+message GetBillingInfoResp {
+  // Billing information of the team.
+  prod_charger.BillingInfo billing_info = 10;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ListPaymentMethods
+
+// List payment methods that belong to the team.
+message ListPaymentMethodsReq {
+  // Team ID of the team.
+  string team_id = 10;
+}
+
+// Represents an incomplete attempt to add a payment method.
+// Might resolve into a payment method.
+message PendingPaymentMethod {
+  // Verification URL for ACH micro deposits that verifies the account.
+  string ach_microdeposit_hosted_verification_url = 10;
+}
+
+// Response containing a list of payment methods for the team.
+message ListPaymentMethodsResp {
+  // Payment methods on file.
+  repeated prod_charger.PaymentMethod payment_methods = 10;
+
+  reserved 20;
+  // Pending payment method.
+  PendingPaymentMethod pending_payment_method = 21;
+}
+
+// ------------------------------------------------------------------------------------------------
+// SetDefaultPaymentMethod
+
+// Request to set default payment method on a team.
+message SetDefaultPaymentMethodReq {
+  // Team ID of the team.
+  string team_id = 10;
+  // ID of the payment method that you want to set as default.
+  string payment_method_id = 20;
+}
+
+// Response to setting default payment method.
+message SetDefaultPaymentMethodResp {}
+
+// ------------------------------------------------------------------------------------------------
+// GetAmountToPay
+
+// Each line on the invoice.
+message Line {
+  // The cluster on which the resource is consumed.
+  string cluster_name = 1;
+  // The description of the line item.
+  string description = 2;
+  // The unit in which the price is measured.
+  string unit_type = 3;
+  // The price per unit (1/1_000_000 USD cents).
+  int64 unit_price = 4;
+  // The number of units.
+  int64 num_units = 5;
+  // Total amount of the line item (USD cents).
+  int64 amount = 6;
+}
+
+// The invoice object.
+message CoreInvoice {
+  // Line items on the invoice.
+  repeated Line lines = 1;
+  // Amount before VAT (USD cents).
+  int64 amount_before_vat = 2;
+  // VAT (USD cents).
+  int64 vat_cost = 3;
+  // Total amount after VAT (USD cents).
+  int64 amount_after_vat = 4;
+  // Automatically issued credits (USD cents).
+  int64 auto_credits_issued = 5;
+  // Default credit issued (USD cents).
+  int64 default_credits_issued = 6;
+
+  // Total amount (USD cents).
+  prod_charger.Cent total_with_corr = 9;
+  // Total prepaid credits in the team before the invoice.
+  prod_charger.Cent prepaid_credits = 8;
+  // Prepaid credits used to pay for the invoice.
+  prod_charger.Cent prepaid_credits_used = 7;
+}
+
+// Request to get the payment amount of current month's monthly invoice.
+message GetAmountToPayReq {
+  // Team ID of the team.
+  string team_id = 10;
+}
+
+// Response of the payment amount of current month's monthly invoice.
+message GetAmountToPayResp {
+  reserved 10, 20;
+
+  // The current partial invoice.
+  CoreInvoice core_invoice = 1;
+  // The effective current spending limit in USD cents.
+  int64 effective_spending_limit = 2;
+  // The current default credits in USD cents.
+  int64 default_credits = 3;
+  // The current billing cycle whose invoice data is reported here.
+  BillingCycle billing_cycle = 4;
+}
+
+// ------------------------------------------------------------------------------------------------
+// AnalyzeBillingItems
+
+// Request to get historical API usage.
+message AnalyzeBillingItemsRequest {
+  // The actual analysis request.
+  prod.clickhouse_analytics.AnalyticsRequest analytics_request = 1;
+
+  // The team whose billing records to analyze.
+  string team_id = 2;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ListInvoices
+
+message BillingCycle {
+  int32 year = 1;
+  int32 month = 2;
+}
+
+message ChargerAttempt {
+  int32 ticket = 10;
+  bool successful = 20;
+  string payment_method_id = 30; // The payment method that was tried in this attempt.
+}
+
+message MonthlyInvoiceBundle {
+  // The billing cycle the invoice applies to.
+  BillingCycle billing_cycle = 10;
+  // Default credits applied to the invoice.
+  prod_charger.Cent default_credits_issued = 20;
+  // Automatically issued credits.
+  prod_charger.Cent auto_credits_issued = 30;
+  // Prepaid token on file to be spent.
+  prod_charger.Cent prepaid_tokens_to_spend = 35;
+  // The billing items csv file suffix, used by xAI processes.
+  optional string billing_items_csv_asset_key_suffix = 40;
+  // The billing items corrections csv file suffix, used by xAI processes.
+  optional string corrections_csv_asset_key_suffix = 50;
+}
+
+message PrepaidInvoiceBundle {}
+
+message SubscriptionsInvoiceBundle {}
+
+// Invoice item.
+message InvoiceBundle {
+  // Charging status of the invoice.
+  enum Status {
+    INVALID = 0;
+    PENDING = 1;
+    PAID = 2;
+    WILL_NEVER_BE_CHARGED = 3;
+    FAILED = 4;
+  }
+  // The Team ID.
+  string team_id = 10;
+  // The Invoice ID.
+  string invoice_id = 20;
+  // The Invoice number.
+  string invoice_number = 21;
+  // The creation time of the invoice.
+  google.protobuf.Timestamp create_time = 31;
+  // The status of the invoice.
+  Status invoice_status = 40;
+  // When customer is expected to be charged.
+  google.protobuf.Timestamp first_desired_next_cycle_ts = 50;
+  repeated ChargerAttempt charger_attempts = 60;
+  // List of items composing the invoice.
+  repeated Line lines = 70;
+
+  // Sub-total of the invoice containing all the cost
+  int64 subtotal = 80;
+  // without taxes in USD cents.
+  int64 tax = 90;
+  // Total due for the invoice taxes included in USD cents.
+  int64 total = 100;
+
+  // The invoice pdf suffix.
+  string invoice_pdf_asset_key_suffix = 110;
+
+  // Type of the invoice.
+  oneof flavour {
+    MonthlyInvoiceBundle monthly = 120;
+    PrepaidInvoiceBundle prepaid = 130;
+    SubscriptionsInvoiceBundle subscriptions = 140;
+  }
+}
+
+message InvoiceIds {
+  repeated string invoice_ids = 10;
+}
+
+// Request to list invoices.
+message ListInvoicesReq {
+  // Team ID of the team.
+  string team_id = 10;
+
+  oneof filter {
+    // Specific billing cycle to retrieve.
+    BillingCycle billing_cycle = 20;
+    // Specify since which billing cycle to retrieve.
+    BillingCycle since = 30;
+    // List invoices by ids
+    InvoiceIds invoice_ids = 40;
+  }
+}
+
+// Response containing invoices.
+message ListInvoicesResp {
+  // Invoices.
+  repeated InvoiceBundle invoices = 1;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Prepaid credits
+
+// Change item on the prepaid credit balance.
+message PrepaidBalanceChange {
+  // The reason for the change.
+  enum ChangeOrigin {
+    INVALID_ORIGIN = 0;
+    PURCHASE = 10; // Purchase by user. `amount` field will be negative.
+    SPEND = 20; // Spending by user. `amount` field will be positive.
+    REFUND = 30; // A refund issued to user. `amount` field will be negative.
+    MANUAL = 40; // Can be either positive or negative, performed by xAI staff.
+  }
+  // Status of the top up.
+  enum TopUpStatus {
+    INVALID_STATUS = 0;
+    TO_GENERATE_INVOICE = 10;
+    FAILED_TO_GENERATE_INVOICE = 20;
+    TO_CHARGE = 30;
+    FAILED_TO_CHARGE = 40;
+    SUCCEEDED = 50;
+  }
+  // The team ID.
+  string team_id = 10;
+  // The reason for the change
+  ChangeOrigin change_origin = 20;
+  // Status of the top up.
+  optional TopUpStatus topup_status = 30;
+  // Amount in USD cents.
+  prod_charger.Cent amount = 40;
+
+  // Invoice ID.
+  optional string invoice_id = 50;
+  // Invoice number.
+  optional string invoice_number = 51;
+
+  // Creation time of the invoice.
+  google.protobuf.Timestamp create_time = 60;
+
+  // Calendar year the purchase is made in.
+  optional int32 spend_bp_key_year = 70;
+  // Calendar month the purchase is made in.
+  optional int32 spend_bp_key_month = 80;
+  // Creation timestamp.
+  optional google.protobuf.Timestamp create_ts = 85;
+
+  reserved 90;
+}
+
+// Request to list prepaid credit balance.
+message ListPrepaidBalanceChangesReq {
+  // The team ID of the team.
+  string team_id = 10;
+}
+
+// Response for prepaid credit balance.
+message ListPrepaidBalanceChangesResp {
+  // The changes of the prepaid credit balance.
+  repeated PrepaidBalanceChange changes = 10;
+
+  // The team's currently available prepaid credits (excluding pending
+  // charges).
+  prod_charger.Cent total = 20;
+}
+
+// Top up prepaid credit request.
+message TopUpOrGetExistingPendingChangeReq {
+  // Team ID of the team to top up for.
+  string team_id = 10;
+
+  // Amount of prepaid credit to top up. Can be any integer and we will disregard the sign.
+  prod_charger.Cent amount = 20;
+}
+
+// Response for prepaid credit top up.
+message TopUpOrGetExistingPendingChangeResp {
+  PrepaidBalanceChange change = 10;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Spending Limit
+
+// Request to get postpaid monthly spending limit.
+message GetSpendingLimitsReq {
+  string team_id = 1;
+}
+
+// Postpaid monthly spending limit.
+message SpendingLimits {
+  // Optional spending limit override set by xAI staff.
+  optional prod_charger.Cent hard_sl_override = 1;
+
+  // Automatically calculated hard spending limit (the maximum monthly invoiced spending limit that can be set by the
+  // user).
+  prod_charger.Cent hard_sl_auto = 2;
+
+  // Effective hard spending limit. Takes into account `hard_sl_override` and `hard_sl_auto`. User can set a soft
+  // spending limit lower than this.
+  prod_charger.Cent effective_hard_sl = 5;
+
+  // The soft spending limit previously set by customer. Zero if it has not been set.
+  optional prod_charger.Cent soft_sl = 3;
+
+  // Final monthly invoiced spending limit that xAI API will enforce.
+  prod_charger.Cent effective_sl = 4;
+}
+
+// Response for postpaid monthly spending limit.
+message GetSpendingLimitsResp {
+  SpendingLimits spending_limits = 1;
+}
+
+// Request by user to set a new postpaid monthly spending limit.
+message SetSoftSpendingLimitReq {
+  // Team ID.
+  string team_id = 1;
+  // Desired spending limit in USD cents.
+  prod_charger.Cent desired_soft_spending_limit = 2;
+}
+
+// Response of setting a new postpaid monthly spending limit.
+message SetSoftSpendingLimitResp {
+  // The new spending limit in USD cents.
+  prod_charger.Cent this_bp_soft_spending_limit = 1;
+}
