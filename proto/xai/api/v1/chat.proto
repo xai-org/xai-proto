@@ -153,6 +153,14 @@ message GetCompletionsRequest {
 
   // Whether to use encrypted thinking for thinking trace rehydration.
   bool use_encrypted_content = 24;
+
+  // Maximum number of agentic tool calling turns allowed for this request.
+  // If not set, defaults to the server's global cap.
+  // The effective max_turns will be the min of the server's global cap and the request's max_turns.
+  // This parameter will be ignored for any non-agentic requests.
+  // With parallel tool calls, multiple tool calls can occur within a single turn,
+  // so max_turns does not necessarily equal the total number of tool calls.
+  optional int32 max_turns = 25;
 }
 
 message GetChatCompletionResponse {
