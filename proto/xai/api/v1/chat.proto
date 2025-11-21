@@ -355,7 +355,17 @@ message Content {
 
     // The content is a single image.
     ImageUrlContent image_url = 2;
+
+    // The content is a file attachment (PDF, document, etc.).
+    FileContent file = 3;
   }
+}
+
+// A file attachment in a message.
+message FileContent {
+  // The file ID returned by the Files API when a user uploads a file.
+  // This ID is used to reference the uploaded file in chat conversations.
+  string file_id = 1;
 }
 
 // A message in a conversation. This message is part of the model input. Each
@@ -590,6 +600,9 @@ enum ToolCallType {
   // Indicates the tool is a server-side mcp_tool, and client side won't need to execute.
   // Maps to `mcp_call` type in OAI Responses API.
   TOOL_CALL_TYPE_MCP_TOOL = 6;
+
+  // Indicates the tool is a server-side document_search tool, and client side won't need to execute.
+  TOOL_CALL_TYPE_DOCUMENT_SEARCH_TOOL = 7;
 }
 
 enum ToolCallStatus {
