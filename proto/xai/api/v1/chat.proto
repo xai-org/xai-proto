@@ -161,6 +161,9 @@ message GetCompletionsRequest {
   // With parallel tool calls, multiple tool calls can occur within a single turn,
   // so max_turns does not necessarily equal the total number of tool calls.
   optional int32 max_turns = 25;
+
+  // Allow the users to control what optional fields to be returned in the response.
+  repeated IncludeOption include = 26;
 }
 
 message GetChatCompletionResponse {
@@ -279,6 +282,9 @@ message CompletionMessage {
 
   // The encrypted content.
   string encrypted_content = 5;
+
+  // The citations that the model used to answer the question.
+  repeated InlineCitation citations = 6;
 }
 
 // Holds the differences (deltas) that when concatenated make up the entire
@@ -314,6 +320,57 @@ message Delta {
 
   // The encrypted content.
   string encrypted_content = 5;
+
+  // The citations that the model used to answer the question.
+  repeated InlineCitation citations = 6;
+}
+
+message InlineCitation {
+  // The globally unique id of the citation per response.
+  string id = 1;
+
+  // The index where the inline citation should be inserted in the complete text response.
+  int32 start_index = 2;
+
+  // The citation type.
+  oneof citation {
+    // The citation returned from the web search tool.
+    WebCitation web_citation = 3;
+
+    // The citation returned from the X search tool.
+    XCitation x_citation = 4;
+
+    // The citation returned from the collections search tool.
+    CollectionsCitation collections_citation = 5;
+  }
+}
+
+message WebCitation {
+  // The url of the web page that the citation is from.
+  string url = 1;
+}
+
+message XCitation {
+  // The url of the X post or profile that the citation is from.
+  // The url is always a x.com url.
+  string url = 1;
+}
+
+message CollectionsCitation {
+  // The id of the file that the citation is from.
+  string file_id = 1;
+
+  // The id of the chunk that the citation is from.
+  string chunk_id = 2;
+
+  // The content of the chunk that the citation is from.
+  string chunk_content = 3;
+
+  // The relevance score of the citation.
+  float score = 4;
+
+  // The ids of the collections that the citation is from.
+  repeated string collection_ids = 5;
 }
 
 // Holding the log probabilities of the sampling.
@@ -374,6 +431,32 @@ message FileContent {
   // The file ID returned by the Files API when a user uploads a file.
   // This ID is used to reference the uploaded file in chat conversations.
   string file_id = 1;
+}
+
+enum IncludeOption {
+  // Default value / invalid option.
+  INCLUDE_OPTION_INVALID = 0;
+
+  // Include the encrypted output from the web search tool in the response.
+  INCLUDE_OPTION_WEB_SEARCH_CALL_OUTPUT = 1;
+
+  // Include the encrypted output from the X search tool in the response.
+  INCLUDE_OPTION_X_SEARCH_CALL_OUTPUT = 2;
+
+  // Include the plaintext output from the code execution tool in the response.
+  INCLUDE_OPTION_CODE_EXECUTION_CALL_OUTPUT = 3;
+
+  // Include the plaintext output from the collections search tool in the response.
+  INCLUDE_OPTION_COLLECTIONS_SEARCH_CALL_OUTPUT = 4;
+
+  // Include the plaintext output from the document search tool in the response.
+  INCLUDE_OPTION_DOCUMENT_SEARCH_CALL_OUTPUT = 5;
+
+  // Include the plaintext output from the MCP tool in the response.
+  INCLUDE_OPTION_MCP_CALL_OUTPUT = 6;
+
+  // Include the inline citations in the final response.
+  INCLUDE_OPTION_INLINE_CITATIONS = 7;
 }
 
 // A message in a conversation. This message is part of the model input. Each
@@ -878,6 +961,9 @@ message RequestSettings {
 
   // Whether to use encrypted thinking for thinking trace rehydration.
   bool use_encrypted_content = 13;
+
+  // Allow the users to control what optional fields to be returned in the response.
+  repeated IncludeOption include = 14;
 }
 
 // Request to retrieve a stored completion response.
