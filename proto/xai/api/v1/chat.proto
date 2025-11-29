@@ -485,6 +485,9 @@ message Message {
 
   // The encrypted content.
   string encrypted_content = 6;
+
+  // The ID associating this tool response with a prior invocation (for role = ROLE_TOOL).
+  string tool_call_id = 7;
 }
 
 enum MessageRole {
