@@ -326,11 +326,24 @@ message Delta {
 }
 
 message InlineCitation {
-  // The globally unique id of the citation per response.
+  // The display number for this citation (e.g., "1", "2", "3").
+  // This ID is reused when the same source is cited multiple times in a
+  // response, ensuring consistent numbering (e.g., the same URL always shows as
+  // [1]).
   string id = 1;
 
-  // The index where the inline citation should be inserted in the complete text response.
+  // The character position in the response text where the citation markdown
+  // link begins. This is the index of the first '[' character in the citation
+  // format [[id]](url). Uses inclusive indexing (the character at this index is
+  // part of the citation).
   int32 start_index = 2;
+
+  // The character position in the response text immediately after the citation
+  // markdown link ends. This is the index after the final ']' character in the
+  // citation format [[id]](url). Uses exclusive indexing (the character at this
+  // index is NOT part of the citation). Together with start_index,
+  // text[start_index:end_index] extracts the full citation link.
+  int32 end_index = 6;
 
   // The citation type.
   oneof citation {
