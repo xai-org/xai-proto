@@ -462,8 +462,8 @@ enum IncludeOption {
   // Include the plaintext output from the collections search tool in the response.
   INCLUDE_OPTION_COLLECTIONS_SEARCH_CALL_OUTPUT = 4;
 
-  // Include the plaintext output from the document search tool in the response.
-  INCLUDE_OPTION_DOCUMENT_SEARCH_CALL_OUTPUT = 5;
+  // Include the plaintext output from the attachment search tool in the response.
+  INCLUDE_OPTION_ATTACHMENT_SEARCH_CALL_OUTPUT = 5;
 
   // Include the plaintext output from the MCP tool in the response.
   INCLUDE_OPTION_MCP_CALL_OUTPUT = 6;
@@ -584,8 +584,8 @@ message Tool {
     CollectionsSearch collections_search = 6;
     // A remote MCP server to use.
     MCP mcp = 7;
-    // Built in document search.
-    DocumentSearch document_search = 8;
+    // Built in attachment search.
+    AttachmentSearch attachment_search = 8;
   }
 }
 
@@ -667,7 +667,7 @@ message CollectionsSearch {
   optional int32 limit = 2;
 }
 
-message DocumentSearch {
+message AttachmentSearch {
   // Optional number of files to limit the search to.
   optional int32 limit = 2;
 }
@@ -713,8 +713,9 @@ enum ToolCallType {
   // Maps to `mcp_call` type in OAI Responses API.
   TOOL_CALL_TYPE_MCP_TOOL = 6;
 
-  // Indicates the tool is a server-side document_search tool, and client side won't need to execute.
-  TOOL_CALL_TYPE_DOCUMENT_SEARCH_TOOL = 7;
+  // Indicates the tool is a server-side attachment_search tool, and client side won't need to execute.
+  // Maps to `attachment_search_call` type in OAI Responses API.
+  TOOL_CALL_TYPE_ATTACHMENT_SEARCH_TOOL = 7;
 }
 
 enum ToolCallStatus {
