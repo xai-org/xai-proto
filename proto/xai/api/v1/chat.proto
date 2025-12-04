@@ -4,6 +4,7 @@ package xai_api;
 
 import "google/protobuf/timestamp.proto";
 import "xai/api/v1/deferred.proto";
+import "xai/api/v1/documents.proto";
 import "xai/api/v1/image.proto";
 import "xai/api/v1/sample.proto";
 import "xai/api/v1/usage.proto";
@@ -665,6 +666,20 @@ message CollectionsSearch {
   // Optional number of chunks to be returned for each collections search.
   // Defaults to 10.
   optional int32 limit = 2;
+
+  // User-defined instructions to be included in the search query. Defaults to generic search
+  // instructions used by the collections search backend if unset.
+  optional string instructions = 3;
+
+  // How to perform the document search. Defaults to hybrid retrieval when unset.
+  oneof retrieval_mode {
+    // Perform hybrid retrieval combining keyword and semantic search.
+    HybridRetrieval hybrid_retrieval = 4;
+    // Perform pure semantic retrieval using dense embeddings.
+    SemanticRetrieval semantic_retrieval = 5;
+    // Perform keyword-based retrieval using sparse embeddings.
+    KeywordRetrieval keyword_retrieval = 6;
+  }
 }
 
 message AttachmentSearch {
