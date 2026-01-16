@@ -622,6 +622,26 @@ message WebSearch {
   // Enable image understanding in downstream tools (e.g. allow fetching and interpreting images).
   // When true, the server may add image viewing tools to the active MCP toolset.
   optional bool enable_image_understanding = 3;
+
+  // The user location to use for a preference on the search results.
+  // Setting this will make the agentic search results more relevant to the specified location,
+  // which is useful for geolocation-based search results refinement.
+  optional WebSearchUserLocation user_location = 4;
+}
+
+// The user location to use for a preference on the search results.
+message WebSearchUserLocation {
+  // Two-letter ISO 3166-1 alpha-2 country code, like US, GB, etc.
+  optional string country = 1;
+
+  // Free text string for the city.
+  optional string city = 2;
+
+  // Free text string for the region.
+  optional string region = 3;
+
+  // IANA timezone like America/Chicago, Europe/London, etc.
+  optional string timezone = 4;
 }
 
 message XSearch {
