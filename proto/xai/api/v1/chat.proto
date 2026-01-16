@@ -624,6 +624,8 @@ message WebSearch {
   optional bool enable_image_understanding = 3;
 
   // The user location to use for a preference on the search results.
+  // Setting this will make the agentic search results more relevant to the specified location,
+  // which is useful for geolocation-based search results refinement.
   optional WebSearchUserLocation user_location = 4;
 }
 
