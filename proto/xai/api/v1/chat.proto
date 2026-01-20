@@ -530,6 +530,9 @@ enum MessageRole {
 
   // Indicates a return from a tool call.
   ROLE_TOOL = 5;
+
+  // Developer role, typically for developer instructions, e.g. tool usage instructions.
+  ROLE_DEVELOPER = 6;
 }
 
 enum ReasoningEffort {
