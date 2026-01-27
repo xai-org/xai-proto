@@ -7,8 +7,6 @@ import "google/rpc/status.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "proxy/gen/go/xai_api;xai_api";
-
 // An API service for processing batch requests asynchronously at lower priority than chat service.
 service BatchMgmt {
   // Creates a new batch.
