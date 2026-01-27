@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package xai_api;
 
-import "xai/api/v1/chat.proto";
-import "google/rpc/status.proto";
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+import "xai/api/v1/chat.proto";
 
 // An API service for processing batch requests asynchronously at lower priority than chat service.
 service BatchMgmt {
@@ -22,20 +22,16 @@ service BatchMgmt {
   rpc CancelBatch(CancelBatchRequest) returns (Batch) {}
 
   // Adds requests to a batch.
-  rpc AddBatchRequests(AddBatchRequestsRequest)
-      returns (google.protobuf.Empty) {}
+  rpc AddBatchRequests(AddBatchRequestsRequest) returns (google.protobuf.Empty) {}
 
   // Lists metadata about individual requests in a batch.
-  rpc ListBatchRequestMetadata(ListBatchRequestMetadataRequest)
-      returns (ListBatchRequestMetadataResponse) {}
+  rpc ListBatchRequestMetadata(ListBatchRequestMetadataRequest) returns (ListBatchRequestMetadataResponse) {}
 
   // Lists processing results of a batch.
-  rpc ListBatchResults(ListBatchResultsRequest)
-      returns (ListBatchResultsResponse) {}
+  rpc ListBatchResults(ListBatchResultsRequest) returns (ListBatchResultsResponse) {}
 
   // Retrieves an individual request in a batch.
-  rpc GetBatchRequestResult(GetBatchRequestResultRequest)
-      returns (GetBatchRequestResultResponse) {}
+  rpc GetBatchRequestResult(GetBatchRequestResultRequest) returns (GetBatchRequestResultResponse) {}
 }
 
 // ------------------------------------------------------------------------------------------------
