@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package xai_api;
 
+import "xai/api/v1/usage.proto";
+
 // An API service for interaction with image generation models.
 service Image {
   // Create an image based on a text prompt and optionally another image.
@@ -32,6 +34,20 @@ message GenerateImageRequest {
   // Optional field to specify the image format to return the generated image(s)
   // in. See ImageFormat enum for options.
   ImageFormat format = 11;
+
+  // Optional aspect ratio for image generation/editing.
+  // Only supported by grok-imagine models.
+  // Defaults to 1:1 if not specified. Auto is only supported for image generation
+  // with a thinking upsampler.
+  optional ImageAspectRatio aspect_ratio = 14;
+
+  // Optional resolution for image generation/editing.
+  // Only supported by grok-imagine models.
+  // Defaults to 1k if not specified.
+  // When 2k is selected, the image is generated at 1k and upscaled using super-resolution.
+  // The final output area is capped at approximately 2048x2048 pixels, with dimensions
+  // adjusted to preserve aspect ratio and rounded to multiples of 16.
+  optional ImageResolution resolution = 15;
 }
 
 // The response from the image generation models containing the generated image(s).
@@ -41,16 +57,21 @@ message ImageResponse {
 
   // The model used to generate the image (ignoring aliases).
   string model = 2;
+
+  // The usage of the request.
+  SamplingUsage usage = 3;
 }
 
 // Contains all data related to a generated image.
 message GeneratedImage {
   // The generated image.
   oneof image {
-    // A base-64 encoded string of the image.
+    // A base-64 encoded string of the image. Provided if user specified `IMG_FORMAT_BASE64` in `format` field of the
+    // `GenerateImageRequest` message.
     string base64 = 1;
 
-    // A url that points to the generated image.
+    // A url that points to the generated image. Provided if user specified `IMG_FORMAT_URL` in `format` field of the
+    // `GenerateImageRequest` message.
     string url = 3;
   }
 
@@ -66,7 +87,7 @@ message GeneratedImage {
 // Contains data relating to an image that is provided to the model.
 message ImageUrlContent {
   // This is either an image URL or a base64-encoded version of the image.
-  // The following image formats are supported: PNG and JPG.
+  // The following image formats are supported: PNG, JPG, and WebP.
   // If an image URL is provided, the image will be downloaded for every API
   // request without being cached. Images are fetched using
   // "XaiImageApiFetch/1.0" user agent, and will timeout after 5 seconds.
@@ -108,4 +129,81 @@ enum ImageFormat {
 
   // An URL at which the user can download the image.
   IMG_FORMAT_URL = 2;
+}
+
+// Quality levels for image generation with their corresponding resolutions.
+// Currently only supported by grok-imagine models.
+enum ImageQuality {
+  // Quality is invalid.
+  IMG_QUALITY_INVALID = 0;
+
+  // Low quality.
+  IMG_QUALITY_LOW = 1;
+
+  // Medium quality: (default).
+  IMG_QUALITY_MEDIUM = 2;
+
+  // High quality.
+  IMG_QUALITY_HIGH = 3;
+}
+
+// Aspect ratio for image generation.
+// Only supported by grok-imagine models.
+enum ImageAspectRatio {
+  // Invalid aspect ratio.
+  IMG_ASPECT_RATIO_INVALID = 0;
+
+  // 1:1 aspect ratio (square).
+  IMG_ASPECT_RATIO_1_1 = 1;
+
+  // 3:4 aspect ratio (portrait).
+  IMG_ASPECT_RATIO_3_4 = 2;
+
+  // 4:3 aspect ratio (landscape).
+  IMG_ASPECT_RATIO_4_3 = 3;
+
+  // 9:16 aspect ratio (tall portrait).
+  IMG_ASPECT_RATIO_9_16 = 4;
+
+  // 16:9 aspect ratio (wide landscape).
+  IMG_ASPECT_RATIO_16_9 = 5;
+
+  // 2:3 aspect ratio (photo portrait).
+  IMG_ASPECT_RATIO_2_3 = 6;
+
+  // 3:2 aspect ratio (photo landscape).
+  IMG_ASPECT_RATIO_3_2 = 7;
+
+  // Auto aspect ratio (model auto-selects based on prompt).
+  // Only supported for image generation with a thinking upsampler.
+  IMG_ASPECT_RATIO_AUTO = 8;
+
+  // 9:19.5 aspect ratio (extra tall portrait - phone screens).
+  IMG_ASPECT_RATIO_9_19_5 = 9;
+
+  // 19.5:9 aspect ratio (extra wide landscape).
+  IMG_ASPECT_RATIO_19_5_9 = 10;
+
+  // 9:20 aspect ratio (tall portrait - modern phone screens).
+  IMG_ASPECT_RATIO_9_20 = 11;
+
+  // 20:9 aspect ratio (ultra wide landscape).
+  IMG_ASPECT_RATIO_20_9 = 12;
+
+  // 1:2 aspect ratio (tall portrait).
+  IMG_ASPECT_RATIO_1_2 = 13;
+
+  // 2:1 aspect ratio (wide landscape).
+  IMG_ASPECT_RATIO_2_1 = 14;
+}
+
+// Resolution for image generation.
+// Only supported by grok-imagine models.
+enum ImageResolution {
+  // Invalid resolution.
+  IMG_RESOLUTION_INVALID = 0;
+
+  // 1k resolution (~1 megapixel total).
+  // Dimensions vary by aspect ratio.
+  IMG_RESOLUTION_1K = 1;
 }
