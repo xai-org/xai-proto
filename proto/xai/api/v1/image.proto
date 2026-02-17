@@ -48,6 +48,11 @@ message GenerateImageRequest {
   // The final output area is capped at approximately 2048x2048 pixels, with dimensions
   // adjusted to preserve aspect ratio and rounded to multiples of 16.
   optional ImageResolution resolution = 15;
+
+  // Optional list of input images for multi-reference image editing.
+  // Each image is either an image URL or a base64-encoded version of the image.
+  // This field cannot be set together with the `image` field.
+  repeated ImageUrlContent images = 17;
 }
 
 // The response from the image generation models containing the generated image(s).
