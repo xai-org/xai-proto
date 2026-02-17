@@ -50,8 +50,8 @@ message GenerateImageRequest {
   optional ImageResolution resolution = 15;
 
   // Optional list of input images for multi-reference image editing.
-  // When provided, these take precedence over the single `image` field (field 5).
-  // Each image follows the same format as `image` (URL or base64-encoded).
+  // Each image is either an image URL or a base64-encoded version of the image.
+  // This field cannot be set together with the `image` field.
   repeated ImageUrlContent images = 17;
 }
 
