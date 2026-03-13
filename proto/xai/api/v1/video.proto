@@ -57,11 +57,12 @@ message VideoUrlContent {
 // An API service for interaction with video generation models.
 service Video {
   // Create a video based on a text prompt and optionally an image.
-  // If an image is provided, generates video with the image as the first frame (image-to-video).
-  // If no image is provided, generates video from text only (text-to-video).
+  // If an image is provided, generates video with the image as the first frame
+  // (image-to-video). If no image is provided, generates video from text only
+  // (text-to-video).
   //
-  // This is an asynchronous operation. The method returns immediately with a request_id
-  // that can be used to poll for the result using GetDeferredVideo.
+  // This is an asynchronous operation. The method returns immediately with a
+  // request_id that can be used to poll for the result using GetDeferredVideo.
   rpc GenerateVideo(GenerateVideoRequest) returns (StartDeferredResponse) {}
 
   // Gets the result of a video generation started by calling `GenerateVideo`.
@@ -121,6 +122,11 @@ message VideoResponse {
 
   // The usage of the request.
   SamplingUsage usage = 3;
+
+  // Structured error describing why video generation failed.
+  // Only present when the background generation encountered a failure
+  // (either client error 4xx or server error 5xx).
+  optional VideoError error = 6;
 }
 
 // Contains all data related to a generated video.
@@ -145,4 +151,12 @@ message GetDeferredVideoResponse {
 
   // Response. Only present if `status=DONE`
   optional VideoResponse response = 2;
+}
+
+// Structured error returned when video generation fails.
+message VideoError {
+  // Machine-readable error code (e.g. "invalid_argument", "internal_error").
+  string code = 1;
+  // Human-readable error message describing the failure.
+  string message = 2;
 }
