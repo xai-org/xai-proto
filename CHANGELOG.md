@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- Added Go protobuf and gRPC code generation support via `buf.build/protocolbuffers/go` and `buf.build/grpc/go` plugins, outputting to `gen/go/` (closes #37).
 - New features or functionalities added to the project.
 
 ### Changed

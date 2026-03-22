@@ -2,6 +2,14 @@ version: v2
 clean: true # remove generated files before re-generating
 managed:
   enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/xai-org/xai-proto/gen/go
+  disable:
+    - module: buf.build/googleapis/googleapis
+      file_option: go_package_prefix
+    - module: buf.build/grpc-ecosystem/grpc-gateway
+      file_option: go_package_prefix
 plugins:
   # protoc v30
   - remote: buf.build/protocolbuffers/python:v30.0
@@ -19,6 +27,17 @@ plugins:
   - remote: buf.build/protocolbuffers/pyi:v29.1
     out: gen/python/v5
 
+  # go
+  - remote: buf.build/protocolbuffers/go:v1.36.5
+    out: gen/go
+    opt:
+      - paths=source_relative
+  - remote: buf.build/grpc/go:v1.5.1
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false
+
   # typescript
   - remote: buf.build/bufbuild/es:v2.8.0
     out: gen/ts/v2
@@ -26,4 +45,3 @@ plugins:
     opt:
       - target=ts
       - json_types=true
-  
