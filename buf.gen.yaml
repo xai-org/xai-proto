@@ -36,7 +36,6 @@ plugins:
     out: gen/go
     opt:
       - paths=source_relative
-      - require_unimplemented_servers=false
 
   # typescript
   - remote: buf.build/bufbuild/es:v2.8.0
