@@ -65,14 +65,15 @@ service Video {
   // request_id that can be used to poll for the result using GetDeferredVideo.
   rpc GenerateVideo(GenerateVideoRequest) returns (StartDeferredResponse) {}
 
-  // Gets the result of a video generation started by calling `GenerateVideo`.
-  rpc GetDeferredVideo(GetDeferredVideoRequest) returns (GetDeferredVideoResponse) {}
-}
+  // Extend an existing video by generating continuation content.
+  //
+  // This is an asynchronous operation. The method returns immediately with a
+  // request_id that can be used to poll for the result using GetDeferredVideo.
+  rpc ExtendVideo(ExtendVideoRequest) returns (StartDeferredResponse) {}
 
-// Output destination for generated video.
-message VideoOutput {
-  // Signed URL to upload the generated video via HTTP PUT.
-  string upload_url = 1;
+  // Gets the result of a video generation started by calling `GenerateVideo` or
+  // `ExtendVideo`.
+  rpc GetDeferredVideo(GetDeferredVideoRequest) returns (GetDeferredVideoResponse) {}
 }
 
 // Request message for generating a video.
@@ -104,6 +105,11 @@ message GenerateVideoRequest {
   // Optional resolution for video generation.
   // Defaults to 480p if not specified.
   optional VideoResolution resolution = 8;
+
+  // Optional reference images for reference-to-video (R2V) generation.
+  // When provided (and `image` is not set), generates video using these images
+  // as style/content references.
+  repeated ImageUrlContent reference_images = 13;
 }
 
 // Request for retrieving deferred video generation results.
@@ -120,13 +126,20 @@ message VideoResponse {
   // The model used to generate the video (ignoring aliases).
   string model = 2;
 
-  // The usage of the request.
+  // Billing and cost information for this request.
   SamplingUsage usage = 3;
 
   // Structured error describing why video generation failed.
   // Only present when the background generation encountered a failure
   // (either client error 4xx or server error 5xx).
   optional VideoError error = 6;
+
+  // Approximate completion percentage for the video generation task (0-100).
+  // - When status is `PENDING`: progress is between 0-99, indicating current
+  // completion.
+  // - When status is `DONE`: progress is 100.
+  // - When status is `FAILED`: progress is 0.
+  int32 progress = 7;
 }
 
 // Contains all data related to a generated video.
@@ -149,7 +162,8 @@ message GetDeferredVideoResponse {
   // Current status of the request.
   DeferredStatus status = 1;
 
-  // Response. Only present if `status=DONE`
+  // Response. Only present if `status=DONE` or `status=FAILED`.
+  // When failed, the `error` field in VideoResponse describes the failure.
   optional VideoResponse response = 2;
 }
 
@@ -159,4 +173,22 @@ message VideoError {
   string code = 1;
   // Human-readable error message describing the failure.
   string message = 2;
+}
+
+// Request message for extending an existing video.
+message ExtendVideoRequest {
+  // Prompt describing what should happen next in the video.
+  string prompt = 1;
+
+  // Input video to extend. The extension continues from the end of this video.
+  // Supports URL or base64-encoded video data.
+  // Input video must be between 2 and 30 seconds long.
+  VideoUrlContent video = 2;
+
+  // Name or alias of the video generation model to be used.
+  string model = 3;
+
+  // Duration of the extension segment to generate in seconds (1-10).
+  // Defaults to 6 seconds if not specified.
+  optional int32 duration = 4;
 }
