@@ -165,6 +165,10 @@ message GetCompletionsRequest {
 
   // Allow the users to control what optional fields to be returned in the response.
   repeated IncludeOption include = 26;
+
+  // Number of agents to use for multi-agent models.
+  // Only valid when model is a `multi-agent` model. Defaults to `AGENT_COUNT_UNSPECIFIED`.
+  optional AgentCount agent_count = 29;
 }
 
 message GetChatCompletionResponse {
@@ -540,6 +544,16 @@ enum ReasoningEffort {
   EFFORT_LOW = 1;
   EFFORT_MEDIUM = 2;
   EFFORT_HIGH = 3;
+}
+
+// Number of agents to use for multi-agent models.
+enum AgentCount {
+  // Unspecified / unset value.
+  AGENT_COUNT_UNSPECIFIED = 0;
+  // Use 4 agents.
+  AGENT_COUNT_4 = 1;
+  // Use 16 agents.
+  AGENT_COUNT_16 = 2;
 }
 
 enum ToolMode {
