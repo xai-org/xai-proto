@@ -446,9 +446,36 @@ message Content {
 
 // A file attachment in a message.
 message FileContent {
-  // The file ID returned by the Files API when a user uploads a file.
-  // This ID is used to reference the uploaded file in chat conversations.
+  // The file ID from the Files API.
+  //
+  // When set, the file content will be fetched via the Files API.
   string file_id = 1;
+
+  // Inline file bytes (optional).
+  //
+  // When set, the file content is provided directly in the chat request and does
+  // NOT require uploading to the Files API first.
+  //
+  // Exactly one of `file_id`, `data`, or `url` SHOULD be set.
+  bytes data = 2;
+
+  // Filename for inline uploads.
+  //
+  // Recommended when `data` is set. Used for display and may be used by
+  // downstream systems to infer file type.
+  string filename = 3;
+
+  // Optional MIME type for inline uploads (e.g. "application/pdf").
+  //
+  // If unset, downstream systems may attempt to infer the MIME type from the
+  // content and/or filename.
+  string mime_type = 4;
+
+  // Public URL to a file attachment.
+  //
+  // When set, the file will be fetched from this URL as an attachment.
+  // Exactly one of `file_id`, `data`, or `url` SHOULD be set.
+  string url = 5;
 }
 
 enum IncludeOption {
