@@ -30,4 +30,8 @@ enum DeferredStatus {
 
   // The request is still being processed.
   PENDING = 3;
+
+  // The request failed due to an internal service error.
+  // The error message is in the `error` field of the response.
+  FAILED = 4;
 }

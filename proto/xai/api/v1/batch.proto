@@ -1,0 +1,302 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+import "xai/api/v1/chat.proto";
+
+// An API service for processing batch requests asynchronously at lower priority than chat service.
+service BatchMgmt {
+  // Creates a new batch.
+  rpc CreateBatch(CreateBatchRequest) returns (Batch) {}
+
+  // Retrieves an individual batch.
+  rpc GetBatch(GetBatchRequest) returns (Batch) {}
+
+  // Retrieves a list of all batches owned by the team.
+  rpc ListBatches(ListBatchesRequest) returns (ListBatchesResponse) {}
+
+  // Stops processing of all outstanding requests in the batch.
+  rpc CancelBatch(CancelBatchRequest) returns (Batch) {}
+
+  // Adds requests to a batch.
+  rpc AddBatchRequests(AddBatchRequestsRequest) returns (google.protobuf.Empty) {}
+
+  // Lists metadata about individual requests in a batch.
+  rpc ListBatchRequestMetadata(ListBatchRequestMetadataRequest) returns (ListBatchRequestMetadataResponse) {}
+
+  // Lists processing results of a batch.
+  rpc ListBatchResults(ListBatchResultsRequest) returns (ListBatchResultsResponse) {}
+
+  // Retrieves an individual request in a batch.
+  rpc GetBatchRequestResult(GetBatchRequestResultRequest) returns (GetBatchRequestResultResponse) {}
+}
+
+// ------------------------------------------------------------------------------------------------
+// Entities
+
+// Holds basic information about a batch process.
+message Batch {
+  // The ID of the batch. Can be used to retrieve batch results and metadata, etc.
+  string batch_id = 1;
+
+  // The name of the batch.
+  string name = 2;
+
+  // The time when the batch was created.
+  google.protobuf.Timestamp create_time = 3;
+
+  // The time when the batch expires.
+  google.protobuf.Timestamp expire_time = 4;
+
+  // ID of the API key that was used to create the batch.
+  string create_api_key_id = 5;
+
+  // Time when the batch was cancelled.
+  google.protobuf.Timestamp cancel_time = 6;
+
+  // If the batch was cancelled by xAI, an error message explaining why.
+  optional string cancel_by_xai_message = 7;
+
+  // The state information of the batch. Not always populated.
+  BatchState state = 8;
+
+  // Cost breakdown for processed requests.
+  BatchCostBreakdown cost_breakdown = 9;
+}
+
+// Holds aggregate information about the current state of a batch process.
+message BatchState {
+  // Total number of requests in the batch.
+  int64 num_requests = 1;
+
+  // Total number of pending requests.
+  int64 num_pending = 2;
+
+  // Total number of requests that have finished successfully.
+  int64 num_success = 3;
+
+  // Total number of requests that finished with an error.
+  int64 num_error = 4;
+
+  // Total number of requests that have been cancelled.
+  int64 num_cancelled = 5;
+}
+
+// Holds cost information for processed batch requests.
+message BatchCostBreakdown {
+  // Total cost across all processed requests of all endpoints in USD ticks ($0.0000000001 / $1e-10).
+  int64 total_cost_usd_ticks = 1;
+
+  // Cost breakdown by endpoint.
+  repeated EndpointCost endpoint_costs = 2;
+
+  // Timestamp when the cost was calculated.
+  google.protobuf.Timestamp calculation_time = 3;
+}
+
+// Cost breakdown for a specific endpoint.
+message EndpointCost {
+  // Endpoint for cost aggregation.
+  string endpoint = 1;
+
+  // Cost for this endpoint in USD ticks ($0.0000000001 / $1e-10).
+  int64 cost_usd_ticks = 2;
+
+  // Number of requests processed for this endpoint.
+  int64 request_count = 3;
+}
+
+// A request that can be added to a batch for processing.
+message BatchRequest {
+  // An optional user-provided identifier for the input request. If provided, it must be unique within the batch.
+  // Used to identify the corresponding result when the response is returned to the user.
+  // This is because the order of the returned results is not guaranteed to be the same as the order of the requests.
+  optional string batch_request_id = 1;
+
+  // The request to add for processing in the batch.
+  oneof request {
+    // A completion request to send for processing in the batch.
+    GetCompletionsRequest completion_request = 2;
+  }
+}
+
+// A container for the completion response that is returned in a `BatchResult`.
+message BatchResultData {
+  // The response from the batch request.
+  oneof response {
+    // A completion response that has finished processing in the batch.
+    GetChatCompletionResponse completion_response = 2;
+  }
+}
+
+// The result corresponding to a `BatchRequest`. Returns the result if processing is successful, or error if processing
+// has failed.
+message BatchResult {
+  // User-provided or generated identifier for the batch request. If a user has provided `batch_request_id` in the
+  // `BatchRequest`, the value will match the user-provided value.
+  // The value is unique within the batch.
+  string batch_request_id = 1;
+
+  // The result data, or error status if processing has failed.
+  oneof result {
+    BatchResultData response = 4;
+    google.rpc.Status error = 3;
+  }
+}
+
+// Metadata about an individual batch request.
+message BatchRequestMetadata {
+  // User-provided or generated identifier for the batch request. The value is unique within the batch.
+  string batch_request_id = 1;
+
+  // API endpoint to query.
+  string endpoint = 2;
+
+  // Model name to query.
+  string model = 3;
+
+  // The processing state of this batch request.
+  enum State {
+    STATE_UNKNOWN = 0;
+    STATE_PENDING = 1;
+    STATE_SUCCEEDED = 2;
+    STATE_CANCELLED = 3;
+    STATE_FAILED = 4;
+  }
+  State state = 4;
+
+  // Time when the request was recorded.
+  google.protobuf.Timestamp create_time = 5;
+
+  // Time when the response was recorded.
+  google.protobuf.Timestamp finish_time = 6;
+}
+
+// ------------------------------------------------------------------------------------------------
+// CreateBatch
+
+// Request to create a new batch.
+message CreateBatchRequest {
+  // The name of the batch to be created.
+  string name = 1;
+}
+
+// ------------------------------------------------------------------------------------------------
+// AddBatchRequests
+
+// Request to add `BatchRequest`s to an existing batch for processing.
+message AddBatchRequestsRequest {
+  // The ID of the batch to add the requests to.
+  string batch_id = 1;
+
+  // The requests to add to the batch.
+  repeated BatchRequest batch_requests = 2;
+}
+
+// ------------------------------------------------------------------------------------------------
+// GetBatch
+
+// Request to get the information of a batch.
+message GetBatchRequest {
+  // The ID of the batch.
+  string batch_id = 1;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ListBatches
+
+// Request to list all batches in the team.
+message ListBatchesRequest {
+  // Number of batches to return on a page. Defaults to 100.
+  int32 limit = 1;
+
+  // Optional pagination token to retrieve a specific page. Provided by `pagination_token` in `ListBatchesResponse`.
+  optional string pagination_token = 2;
+}
+
+// Response containing all the batches on a page.
+message ListBatchesResponse {
+  // The information about the batches.
+  repeated Batch batches = 1;
+
+  // The pagination token to retrieve batches from the next page. Will be empty if this is the last page.
+  optional string pagination_token = 2;
+}
+
+// ------------------------------------------------------------------------------------------------
+// CancelBatch
+
+// Request to cancel processing of all the batch requests in a batch.
+message CancelBatchRequest {
+  // The ID of the batch that we are cancelling the requests.
+  string batch_id = 1;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ListBatchRequestMetadata
+
+// Request for the request metadata within a batch.
+message ListBatchRequestMetadataRequest {
+  // ID of the batch whose batch requests' metadata shall be listed.
+  string batch_id = 1;
+
+  // Number of batch request metadata to return on a page. Defaults to 100.
+  int32 limit = 2;
+
+  // Optional pagination token to retrieve a specific page. Provided by `pagination_token` in `ListBatchRequestMetadataResponse`.
+  optional string pagination_token = 3;
+}
+
+// Response with the metadata of batch requests within a batch.
+message ListBatchRequestMetadataResponse {
+  // The batch requests' metadata for the given batch.
+  repeated BatchRequestMetadata batch_request_metadata = 1;
+
+  // The pagination token to retrieve results from the next page. Will be empty if this is the last page.
+  optional string pagination_token = 2;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ListBatchResults
+
+// Request to list a batch's processing results.
+message ListBatchResultsRequest {
+  // The ID of the batch we are retrieving the results from.
+  string batch_id = 1;
+
+  // Number of batch request results to return on a page. Defaults to 100.
+  int32 limit = 2;
+
+  // Optional pagination token to retrieve a specific page. Provided by `pagination_token` in `ListBatchResultsResponse`.
+  optional string pagination_token = 3;
+}
+
+// Response with the batch's processing results.
+message ListBatchResultsResponse {
+  // The results that has been processed.
+  repeated BatchResult results = 1;
+
+  // The pagination token to retrieve results from the next page. Will be empty if this is the last page.
+  optional string pagination_token = 2;
+}
+
+// ------------------------------------------------------------------------------------------------
+// GetBatchRequest
+
+message GetBatchRequestResultRequest {
+  // The ID of the batch we are retrieving the request from.
+  string batch_id = 1;
+
+  // The ID of the request we are retrieving.
+  string batch_request_id = 2;
+}
+
+message GetBatchRequestResultResponse {
+  // The request that was processed.
+  BatchRequest request = 1;
+  // The response that was returned.
+  BatchResult result = 2;
+}
