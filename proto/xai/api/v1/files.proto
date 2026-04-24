@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "google/protobuf/timestamp.proto";
+
+// Service for uploading, listing, retrieving, and deleting files.
+//
+// Files are referenced by the `id` returned on upload (e.g. when attaching
+// to chat completions). Maximum file size is 512 MB.
+service Files {
+  // Upload a file. The first stream message MUST set `chunk = init`
+  // (filename + optional TTL); subsequent messages MUST set `chunk = data`
+  // with file bytes in order. Recommended chunk size up to 5 MB; total
+  // size capped at 512 MB. Returns the new file's metadata.
+  //
+  // Errors: INVALID_ARGUMENT (missing/misplaced init, bad filename, bad
+  // TTL), RESOURCE_EXHAUSTED (over 512 MB).
+  rpc UploadFile(stream UploadFileChunk) returns (File) {}
+
+  // List file metadata, paginated and sorted. Returns metadata only — use
+  // `RetrieveFileContent` to download bytes.
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {}
+
+  // Get metadata for one file. Returns metadata only — use
+  // `RetrieveFileContent` to download bytes. Errors NOT_FOUND if no
+  // accessible file with that id (including already-deleted).
+  rpc RetrieveFile(RetrieveFileRequest) returns (File) {}
+
+  // Delete a file. After success it stops appearing in `ListFiles` /
+  // `RetrieveFile` and is no longer downloadable. Errors NOT_FOUND if no
+  // accessible file with that id (including already-deleted).
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {}
+
+  // Stream the file's contents in chunks of up to 5 MB, in order.
+  // Concatenate `data` from every chunk to reconstruct the file.
+  rpc RetrieveFileContent(RetrieveFileContentRequest) returns (stream FileContentChunk) {}
+}
+
+// First stream message of an `UploadFile` call. Sent exactly once, before
+// any data chunks.
+message UploadFileInit {
+  // Filename (max 255 Unicode chars). Must not contain ASCII control
+  // chars, line terminators (CR/LF/NEL/U+2028/U+2029), null bytes, `"`,
+  // `;`, or `\` — these would break `Content-Disposition` headers.
+  string name = 1;
+
+  // Optional TTL in seconds, measured from upload time. Must be in
+  // [3600, 2592000] (1h to 30d) inclusive — 0 and out-of-range values are
+  // rejected. Unset means no expiration.
+  optional int64 expires_after = 2;
+}
+
+// One message in an `UploadFile` stream: either `init` (required first) or
+// a `data` chunk.
+message UploadFileChunk {
+  oneof chunk {
+    // Information about the file being uploaded.
+    UploadFileInit init = 1;
+    // Up to ~5 MB per chunk recommended; cumulative size capped at 512 MB.
+    bytes data = 2;
+  }
+}
+
+// Metadata for an uploaded file.
+message File {
+  // Size in bytes.
+  int64 size = 1;
+
+  // UTC timestamp the file was uploaded.
+  google.protobuf.Timestamp created_at = 2;
+
+  // UTC timestamp the file will be auto-deleted at. Present only if the
+  // upload set `UploadFileInit.expires_after`.
+  optional google.protobuf.Timestamp expires_at = 3;
+
+  // Filename as supplied at upload.
+  string filename = 4;
+
+  // Opaque server-assigned ID (e.g. `file_<uuid>`). Use this in
+  // `RetrieveFile`, `DeleteFile`, `RetrieveFileContent`, and other xAI
+  // APIs that accept a file reference.
+  string id = 5;
+
+  reserved 6;
+}
+
+// Sort direction for list-style RPCs.
+enum Ordering {
+  ASCENDING = 0;
+  DESCENDING = 1;
+}
+
+// Field to sort `ListFiles` results by.
+enum FilesSortBy {
+  // Default.
+  FILES_SORT_BY_CREATED_AT = 0;
+  // Case-sensitive lexicographic order.
+  FILES_SORT_BY_FILENAME = 1;
+  FILES_SORT_BY_SIZE = 2;
+}
+
+// Request message for `Files.ListFiles`.
+message ListFilesRequest {
+  // Page size, in [1, 100]. Values <= 0 default to 100; values > 100 are
+  // clamped.
+  int32 limit = 1;
+
+  // Sort direction. Defaults to ASCENDING.
+  Ordering order = 2;
+
+  // Opaque token from a prior `ListFilesResponse.pagination_token`, used to
+  // resume listing where the previous page left off. Omit on the first
+  // call. Use the same `order` and `sort_by` as the request that produced
+  // the token; otherwise paging behavior is undefined. Treat as opaque;
+  // format may change.
+  optional string pagination_token = 3;
+
+  // Sort field. Defaults to `FILES_SORT_BY_CREATED_AT`.
+  optional FilesSortBy sort_by = 4;
+}
+
+// Response message for `Files.ListFiles`.
+message ListFilesResponse {
+  // List of file metadata.
+  repeated File data = 1;
+
+  // Token for the next page; absent on the final page.
+  optional string pagination_token = 2;
+}
+
+// Request message for `Files.RetrieveFile`.
+message RetrieveFileRequest {
+  // The ID of the file to use for this request.
+  string file_id = 1;
+}
+
+// Request message for `Files.DeleteFile`.
+message DeleteFileRequest {
+  // The ID of the file to use for this request.
+  string file_id = 1;
+}
+
+// Response message for `Files.DeleteFile`.
+message DeleteFileResponse {
+  // Echoes the deleted file's id.
+  string id = 1;
+
+  // Always true on success (failures surface as gRPC errors).
+  bool deleted = 2;
+}
+
+// Which representation of a file to download.
+enum DownloadFormat {
+  // Treated as `DOWNLOAD_FORMAT_ORIGINAL` (the default when `format` is
+  // unset).
+  DOWNLOAD_FORMAT_UNKNOWN = 0;
+  // Raw bytes as uploaded.
+  DOWNLOAD_FORMAT_ORIGINAL = 1;
+  // Text extracted from the file (e.g. PDF/DOCX). Only works for file
+  // types with a server-side text-extraction pass; fails otherwise.
+  DOWNLOAD_FORMAT_TEXT = 2;
+}
+
+// Request message for `Files.RetrieveFileContent`.
+message RetrieveFileContentRequest {
+  // The ID of the file to download.
+  string file_id = 1;
+
+  // Format of the downloaded content.
+  // ORIGINAL: raw file bytes (default).
+  // TEXT: extracted/converted text content.
+  optional DownloadFormat format = 2;
+}
+
+// One chunk of a `RetrieveFileContent` stream.
+message FileContentChunk {
+  // Up to 5 MB of file bytes. Final/intermediate chunks may be smaller.
+  bytes data = 1;
+}
