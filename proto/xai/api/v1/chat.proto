@@ -571,6 +571,7 @@ enum ReasoningEffort {
   EFFORT_LOW = 1;
   EFFORT_MEDIUM = 2;
   EFFORT_HIGH = 3;
+  EFFORT_NONE = 4;
 }
 
 // Number of agents to use for multi-agent models.
