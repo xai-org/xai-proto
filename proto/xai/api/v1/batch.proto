@@ -6,6 +6,8 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
 import "xai/api/v1/chat.proto";
+import "xai/api/v1/image.proto";
+import "xai/api/v1/video.proto";
 
 // An API service for processing batch requests asynchronously at lower priority than chat service.
 service BatchMgmt {
@@ -120,15 +122,25 @@ message BatchRequest {
   oneof request {
     // A completion request to send for processing in the batch.
     GetCompletionsRequest completion_request = 2;
+    // An image generation or editing request to send for processing in the batch.
+    GenerateImageRequest image_request = 3;
+    // A video generation request to send for processing in the batch.
+    GenerateVideoRequest video_request = 4;
+    // A video extension request to send for processing in the batch.
+    ExtendVideoRequest video_extension_request = 5;
   }
 }
 
-// A container for the completion response that is returned in a `BatchResult`.
+// A container for the response that is returned in a `BatchResult`.
 message BatchResultData {
   // The response from the batch request.
   oneof response {
     // A completion response that has finished processing in the batch.
     GetChatCompletionResponse completion_response = 2;
+    // An image generation response that has finished processing in the batch.
+    ImageResponse image_response = 3;
+    // A video generation response that has finished processing in the batch.
+    VideoResponse video_response = 4;
   }
 }
 
