@@ -10,6 +10,7 @@ lint:
     - MINIMAL
   except:
     - PACKAGE_DIRECTORY_MATCH
+    - DIRECTORY_SAME_PACKAGE
 breaking:
   use:
     - FILE
