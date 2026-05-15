@@ -67,6 +67,10 @@ message Batch {
 
   // Cost breakdown for processed requests.
   BatchCostBreakdown cost_breakdown = 9;
+
+  // File ID of the uploaded JSONL input file (from Files API). Only set
+  // when the batch was created via file upload.
+  optional string input_file_id = 10;
 }
 
 // Holds aggregate information about the current state of a batch process.
@@ -194,6 +198,10 @@ message BatchRequestMetadata {
 message CreateBatchRequest {
   // The name of the batch to be created.
   string name = 1;
+
+  // Optional file ID of a JSONL input file (uploaded via the Files API).
+  // When provided, the batch will be populated from the file's contents.
+  string input_file_id = 2;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -260,6 +268,9 @@ message ListBatchRequestMetadataRequest {
 
   // Optional pagination token to retrieve a specific page. Provided by `pagination_token` in `ListBatchRequestMetadataResponse`.
   optional string pagination_token = 3;
+
+  // Optional filter by request state. If empty, all states are returned.
+  repeated BatchRequestMetadata.State status = 4;
 }
 
 // Response with the metadata of batch requests within a batch.
