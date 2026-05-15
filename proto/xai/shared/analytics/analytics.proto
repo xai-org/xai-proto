@@ -5,6 +5,8 @@ syntax = "proto3";
 
 package prod.clickhouse_analytics;
 
+option go_package = "github.com/xai-org/xai-proto/gen/go/xai/shared/analytics;analyticspb";
+
 import "google/protobuf/timestamp.proto";
 
 // Time series are created by aggregating value into buckets we call `TimeUnit`.

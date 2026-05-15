@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package xai_api;
 
+option go_package = "github.com/xai-org/xai-proto/gen/go/xai/api/v1;xaiapipb";
+
 service Documents {
   rpc Search(SearchRequest) returns (SearchResponse) {}
 }

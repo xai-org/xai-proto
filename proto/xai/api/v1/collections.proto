@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package collections;
 
+option go_package = "github.com/xai-org/xai-proto/gen/go/xai/api/v1/collections;collectionspb";
+
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
