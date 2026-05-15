@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package xai_api;
 
+option go_package = "github.com/xai-org/xai-proto/gen/go/xai/api/v1;xaiapipb";
+
 // The response from the service, when creating a deferred completion request.
 message StartDeferredResponse {
   // The ID of this request. This ID can be used to retrieve completion results

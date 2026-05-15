@@ -26,4 +26,13 @@ plugins:
     opt:
       - target=ts
       - json_types=true
-  
+
+  # go
+  - remote: buf.build/protocolbuffers/go:v1.36.6
+    out: gen/go
+    opt:
+      - module=github.com/xai-org/xai-proto/gen/go
+  - remote: buf.build/grpc/go:v1.5.1
+    out: gen/go
+    opt:
+      - module=github.com/xai-org/xai-proto/gen/go
