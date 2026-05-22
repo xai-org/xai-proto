@@ -1,0 +1,20 @@
+// Minimal reproduction of the safe_search default value issue.
+// Demonstrates the difference between bool (no presence tracking)
+// and optional bool (with presence tracking) in proto3.
+syntax = "proto3";
+
+package test;
+
+// Simulates the BEFORE state: plain bool field.
+// Proto3 bool defaults to false — server cannot distinguish
+// "client didn't set it" from "client explicitly set false".
+message WebSourceBefore {
+  bool safe_search = 1;
+}
+
+// Simulates the AFTER state: optional bool field.
+// Server can call HasField() to detect whether the client set the value,
+// and apply its own default (true) when unset.
+message WebSourceAfter {
+  optional bool safe_search = 1;
+}
