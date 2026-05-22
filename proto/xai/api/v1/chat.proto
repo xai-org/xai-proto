@@ -947,8 +947,9 @@ message WebSource {
   // See https://en.wikipedia.org/wiki/ISO_3166-2 for valid codes.
   optional string country = 3;
 
-  // Whether to exclude adult content from the search results. Defaults to true.
-  bool safe_search = 4;
+  // Whether to exclude adult content from the search results.
+  // When unset, defaults to true (adult content is excluded).
+  optional bool safe_search = 4;
 }
 
 // Configuration for a news search source in search requests.
@@ -966,8 +967,9 @@ message NewsSource {
   // See https://en.wikipedia.org/wiki/ISO_3166-2 for valid codes.
   optional string country = 3;
 
-  // Whether to exclude adult content from the search results. Defaults to true.
-  bool safe_search = 4;
+  // Whether to exclude adult content from the search results.
+  // When unset, defaults to true (adult content is excluded).
+  optional bool safe_search = 4;
 }
 
 // Configuration for an X (formerly Twitter) search source in search requests.
