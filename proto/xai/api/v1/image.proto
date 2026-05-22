@@ -17,8 +17,11 @@ message GenerateImageRequest {
   // Input prompt to generate an image from.
   string prompt = 1;
 
-  // Optional input image to perform generations based on.
-  ImageUrlContent image = 5;
+  // Deprecated: Use `images` instead. For single-image input, pass a
+  // one-element `images` list. This field and `images` are mutually
+  // exclusive but proto3 cannot enforce that constraint — setting both
+  // produces undefined behavior.
+  ImageUrlContent image = 5 [deprecated = true];
 
   // Name or alias of the image generation model to be used.
   string model = 2;
@@ -49,9 +52,10 @@ message GenerateImageRequest {
   // adjusted to preserve aspect ratio and rounded to multiples of 16.
   optional ImageResolution resolution = 15;
 
-  // Optional list of input images for multi-reference image editing.
-  // Each image is either an image URL or a base64-encoded version of the image.
-  // This field cannot be set together with the `image` field.
+  // Optional input image(s) for image editing or multi-reference generation.
+  // Each element is either an image URL or a base64-encoded image.
+  // For single-image editing, pass a one-element list.
+  // Replaces the deprecated `image` field — do not set both.
   repeated ImageUrlContent images = 17;
 }
 
