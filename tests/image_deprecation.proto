@@ -1,0 +1,18 @@
+syntax = "proto3";
+package test;
+
+message ImageUrl {
+  string url = 1;
+}
+
+// Before: both fields exist, no deprecation, mutual exclusivity only in comments
+message GenerateImageRequestBefore {
+  ImageUrl image = 5;
+  repeated ImageUrl images = 17;
+}
+
+// After: singular field deprecated, clients should use images list
+message GenerateImageRequestAfter {
+  ImageUrl image = 5 [deprecated = true];
+  repeated ImageUrl images = 17;
+}
