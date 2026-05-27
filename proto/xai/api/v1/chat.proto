@@ -675,6 +675,9 @@ message WebSearch {
   // Setting this will make the agentic search results more relevant to the specified location,
   // which is useful for geolocation-based search results refinement.
   optional WebSearchUserLocation user_location = 4;
+
+  // Enable image search results that can be embedded in responses.
+  optional bool enable_image_search = 5;
 }
 
 // The user location to use for a preference on the search results.
