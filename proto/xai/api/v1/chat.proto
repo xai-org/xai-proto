@@ -32,6 +32,12 @@ service Chat {
 
   // Delete a stored response using the response ID.
   rpc DeleteStoredCompletion(DeleteStoredCompletionRequest) returns (DeleteStoredCompletionResponse) {}
+
+  // Compacts a full input context and returns a compacted context.
+  // The client sends the current input items and receives back a compacted
+  // set of items (with an opaque compaction blob) suitable for use as
+  // the input to the next request.
+  rpc CompactContext(CompactContextRequest) returns (CompactContextResponse) {}
 }
 
 message GetCompletionsRequest {
@@ -1129,4 +1135,34 @@ message DebugOutput {
 
   // The tag of the sampler that served this request.
   string sampler_tag = 11;
+}
+
+// ── Context compaction messages ─────────────────────────────────────────
+
+// Request for the standalone CompactContext RPC.
+message CompactContextRequest {
+  // Model to use for generating the compaction blob.
+  string model = 1;
+
+  // Full current input window as proto messages.
+  // This is the same set of messages the client would send in
+  // GetCompletionsRequest.messages.
+  repeated Message input = 2;
+}
+
+// Response from the standalone CompactContext RPC.
+message CompactContextResponse {
+  // Unique compaction ID (e.g. cmp_<uuid>).
+  string id = 1;
+
+  // Opaque blob representing the compacted conversation. Clients must pass
+  // this back unchanged in subsequent requests.
+  string encrypted_content = 2;
+
+  // Number of input Message entries (role + content pairs) from the
+  // original input that were dropped or folded into the compacted blob.
+  uint32 dropped_message_count = 3;
+
+  // Token usage from the compacting model call.
+  SamplingUsage usage = 4;
 }
