@@ -54,6 +54,18 @@ message EmbeddingUsage {
   int32 num_image_embeddings = 2;
 }
 
+// Processing tier for a request. Controls scheduling priority and pricing.
+enum ServiceTier {
+  // Unspecified / default behavior.
+  SERVICE_TIER_UNSPECIFIED = 0;
+
+  // Default processing tier.
+  SERVICE_TIER_DEFAULT = 1;
+
+  // Priority processing tier with higher scheduling priority at a higher price.
+  SERVICE_TIER_PRIORITY = 2;
+}
+
 enum ServerSideTool {
   SERVER_SIDE_TOOL_INVALID = 0;
   SERVER_SIDE_TOOL_WEB_SEARCH = 1;

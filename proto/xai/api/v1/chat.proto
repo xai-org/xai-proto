@@ -175,6 +175,10 @@ message GetCompletionsRequest {
   // Number of agents to use for multi-agent models.
   // Only valid when model is a `multi-agent` model. Defaults to `AGENT_COUNT_UNSPECIFIED`.
   optional AgentCount agent_count = 29;
+
+  // Processing tier for this request. Set to SERVICE_TIER_PRIORITY for
+  // higher scheduling priority at a higher price.
+  ServiceTier service_tier = 30;
 }
 
 message GetChatCompletionResponse {
@@ -213,6 +217,9 @@ message GetChatCompletionResponse {
 
   // Debug output. Only available to trusted testers.
   DebugOutput debug_output = 12;
+
+  // The processing tier that was used for this request.
+  ServiceTier service_tier = 13;
 }
 
 message GetChatCompletionChunk {
@@ -249,6 +256,9 @@ message GetChatCompletionChunk {
 
   // Only available for teams that have debugging privileges.
   DebugOutput debug_output = 10;
+
+  // The processing tier that was used for this request.
+  ServiceTier service_tier = 11;
 }
 
 // Response from GetDeferredCompletion, including the response if the completion
