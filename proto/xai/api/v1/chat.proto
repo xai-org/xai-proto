@@ -178,7 +178,7 @@ message GetCompletionsRequest {
 
   // Processing tier for this request. Set to SERVICE_TIER_PRIORITY for
   // higher scheduling priority at a higher price.
-  ServiceTier service_tier = 30;
+  ServiceTier service_tier = 31;
 }
 
 message GetChatCompletionResponse {
@@ -219,7 +219,7 @@ message GetChatCompletionResponse {
   DebugOutput debug_output = 12;
 
   // The processing tier that was used for this request.
-  ServiceTier service_tier = 13;
+  ServiceTier service_tier = 15;
 }
 
 message GetChatCompletionChunk {
@@ -258,7 +258,7 @@ message GetChatCompletionChunk {
   DebugOutput debug_output = 10;
 
   // The processing tier that was used for this request.
-  ServiceTier service_tier = 11;
+  ServiceTier service_tier = 12;
 }
 
 // Response from GetDeferredCompletion, including the response if the completion
