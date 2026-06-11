@@ -218,6 +218,10 @@ message GetChatCompletionResponse {
   // Debug output. Only available to trusted testers.
   DebugOutput debug_output = 12;
 
+  // Files generated during the response (e.g., by the code execution tool).
+  // Only populated when `INCLUDE_OPTION_CODE_EXECUTION_FILES_OUTPUT` is set.
+  repeated OutputFile output_files = 13;
+
   // The processing tier that was used for this request.
   ServiceTier service_tier = 15;
 }
@@ -257,8 +261,21 @@ message GetChatCompletionChunk {
   // Only available for teams that have debugging privileges.
   DebugOutput debug_output = 10;
 
+  // Files generated during the response (e.g., by the code execution tool).
+  // Only populated for the final chunk when `INCLUDE_OPTION_CODE_EXECUTION_FILES_OUTPUT` is set.
+  repeated OutputFile output_files = 11;
+
   // The processing tier that was used for this request.
   ServiceTier service_tier = 12;
+}
+
+// A file generated during a response (e.g., by the code execution tool).
+message OutputFile {
+  // The file ID from the Files API. Use this to download the file.
+  string file_id = 1;
+
+  // The display name of the file.
+  string name = 2;
 }
 
 // Response from GetDeferredCompletion, including the response if the completion
@@ -526,6 +543,9 @@ enum IncludeOption {
   // this option is not included by default.
   // This option is only available for streaming responses.
   INCLUDE_OPTION_VERBOSE_STREAMING = 8;
+
+  // Generated file output from the code execution environment
+  INCLUDE_OPTION_CODE_EXECUTION_FILES_OUTPUT = 9;
 }
 
 // A message in a conversation. This message is part of the model input. Each
