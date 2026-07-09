@@ -16,7 +16,7 @@ jobs:
     runs-on: xai-proto-runner
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       # Use paths-filter to check if proto files or this workflow changed
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
@@ -30,4 +30,4 @@ jobs:
       # Only run buf checks if proto files or this workflow file changed
       - name: Run Buf Checks
         if: ${{ steps.filter.outputs.proto_changed == 'true' }}
-        uses: bufbuild/buf-action@5150a1eef5c10b6a5cf8a69fc872f24a09473195
+        uses: bufbuild/buf-action@5150a1eef5c10b6a5cf8a69fc872f24a09473195 # v1.1.1
