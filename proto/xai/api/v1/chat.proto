@@ -143,7 +143,7 @@ message GetCompletionsRequest {
   // new topics.
   optional float presence_penalty = 9;
 
-  // Constrains effort on reasoning for reasoning models. Default to `EFFORT_MEDIUM`.
+  // Constrains effort on reasoning for reasoning models. Defaults vary by model (e.g. `grok-4.5` and `grok-4.6` default to `EFFORT_HIGH`).
   optional ReasoningEffort reasoning_effort = 19;
 
   // Set the parameters to be used for realtime data. If not set, no realtime data will be acquired by the model.
@@ -1059,7 +1059,7 @@ message RequestSettings {
   // The ID of the previous response from the model.
   optional string previous_response_id = 3;
 
-  // Constrains effort on reasoning for reasoning models. Default to `EFFORT_MEDIUM`.
+  // Constrains effort on reasoning for reasoning models. Defaults vary by model (e.g. `grok-4.5` and `grok-4.6` default to `EFFORT_HIGH`).
   optional ReasoningEffort reasoning_effort = 4;
 
   // A number between 0 and 2 used to control the variance of completions.
