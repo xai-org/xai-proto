@@ -38,10 +38,13 @@ xAI's API protobuf definitions generally follow [Semantic Versioning (SemVer)](h
 
 The protobuf files are organized by major version (e.g., `proto/xai/api/v1`). Breaking changes will be introduced in a new major version directory (e.g., `proto/xai/api/v2`) to ensure existing clients remain unaffected.
 
-## Official SDKs
+## SDKs
 
 xAI maintains official SDKs for:
 - [**Python**](https://github.com/xai-org/xai-sdk-python): Built using the generated code from the Python plugins in `buf.gen.yaml`.
+
+Also refer to community-driven SDKs for:
+- [**Swift**](https://github.com/DnV1eX/XAISDK): Brings xAI clients to Apple and other platforms, utilizing gRPC Swift 2 and Swift Protobuf `protoc` plugins.
 
 These SDKs are available separately and provide a convenient, language-specific interface for interacting with xAI's gRPC APIs. For more details, visit [xAI's API documentation](https://docs.x.ai/).
 
