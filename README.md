@@ -26,6 +26,20 @@ This command will:
 - Can be customized by editing `buf.gen.yaml` to support additional languages via Buf's remote plugin ecosystem.
 - Can also be customized to leverage locally installed plugins as well as remote ones.
 
+### Proto3 `optional` fields and code generators
+
+Some xAI proto3 definitions use the `optional` label for fields that need
+explicit presence tracking. This is valid proto3 syntax in modern Protocol
+Buffers tooling and lets generated clients distinguish between "unset" and a
+field explicitly set to its default value. For background, see the Protocol
+Buffers documentation on [field presence](https://protobuf.dev/programming-guides/field_presence/).
+
+If a language-specific generator reports that `optional` is disallowed in
+proto3 files, update the compiler or generator to a version that supports
+proto3 optional field presence. Removing the `optional` label can change the
+generated client API and should be avoided unless the schema owners coordinate a
+compatibility review.
+
 ## Versioning
 
 xAI's API protobuf definitions generally follow [Semantic Versioning (SemVer)](https://semver.org). The versioning approach is as follows:
