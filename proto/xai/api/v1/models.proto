@@ -5,25 +5,32 @@ package xai_api;
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
-// An API service that let users get details of available models on the
-// platform.
+// Models API service provides methods to list and retrieve details about
+// available models on the xAI platform. Access is controlled by the API key
+// in use, and users may only see models available to their team.
 service Models {
   // Lists all language models available to your team (based on the API key).
+  // Returns models suitable for chat, text generation, and similar tasks.
   rpc ListLanguageModels(google.protobuf.Empty) returns (ListLanguageModelsResponse) {}
 
   // Lists all embedding models available to your team (based on the API key).
+  // Embedding models convert text to vector representations for semantic search.
   rpc ListEmbeddingModels(google.protobuf.Empty) returns (ListEmbeddingModelsResponse) {}
 
   // Lists all image generation models available to your team (based on the API key).
+  // Image generation models create images from text descriptions.
   rpc ListImageGenerationModels(google.protobuf.Empty) returns (ListImageGenerationModelsResponse) {}
 
   // Get details of a specific language model by model name.
+  // Provides comprehensive information about a single language model.
   rpc GetLanguageModel(GetModelRequest) returns (LanguageModel) {}
 
   // Get details of a specific embedding model by model name.
+  // Provides comprehensive information about a single embedding model.
   rpc GetEmbeddingModel(GetModelRequest) returns (EmbeddingModel) {}
 
   // Get details of a specific image generation model by model name.
+  // Provides comprehensive information about a single image generation model.
   rpc GetImageGenerationModel(GetModelRequest) returns (ImageGenerationModel) {}
 }
 
