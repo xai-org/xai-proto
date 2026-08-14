@@ -1,0 +1,592 @@
+syntax = "proto3";
+
+package collections;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// An API service to manage collections.
+service Collections {
+  // Create a collection.
+  rpc CreateCollection(CreateCollectionRequest) returns (CollectionMetadata);
+
+  // List all the collections a team has.
+  rpc ListCollections(ListCollectionsRequest) returns (ListCollectionsResponse);
+
+  // Delete a specific collection.
+  rpc DeleteCollection(DeleteCollectionRequest) returns (google.protobuf.Empty);
+
+  // Get a collection's metadata.
+  rpc GetCollectionMetadata(GetCollectionMetadataRequest) returns (CollectionMetadata);
+
+  // Update document data and metadata.
+  rpc UpdateDocument(UpdateDocumentRequest) returns (DocumentMetadata);
+
+  // List all the documents in a collection.
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
+
+  // Get a document's metadata.
+  rpc GetDocumentMetadata(GetDocumentMetadataRequest) returns (DocumentMetadata);
+
+  // Add an existing file as a document to a collection.
+  rpc AddDocumentToCollection(AddDocumentToCollectionRequest) returns (google.protobuf.Empty);
+
+  // Remove a document from a collection. The underlying file is not deleted.
+  rpc RemoveDocumentFromCollection(RemoveDocumentFromCollectionRequest) returns (google.protobuf.Empty);
+
+  // Re-index a document (regenerate chunks and embeddings).
+  rpc ReIndexDocument(ReIndexDocumentRequest) returns (google.protobuf.Empty);
+
+  // Update collection-level settings (name, chunk configuration, field
+  // definitions, description).
+  rpc UpdateCollection(UpdateCollectionRequest) returns (CollectionMetadata);
+
+  // Batch get document metadata by file IDs.
+  rpc BatchGetDocuments(BatchGetDocumentsRequest) returns (BatchGetDocumentsResponse);
+
+  // Generate an LLM-written description for a collection based on its
+  // contents.
+  rpc GenerateCollectionDescription(GenerateCollectionDescriptionRequest) returns (GenerateCollectionDescriptionResponse);
+}
+
+// Sort/listing direction.
+enum Ordering {
+  ORDERING_UNKNOWN = 0;
+  ORDERING_ASCENDING = 1;
+  ORDERING_DESCENDING = 2;
+}
+
+// Field on which to sort the collections returned from `ListCollections`.
+enum CollectionsSortBy {
+  COLLECTIONS_SORT_BY_NAME = 0;
+  COLLECTIONS_SORT_BY_AGE = 1;
+}
+
+// Operation to perform on a collection's field definition.
+enum FieldDefinitionOperation {
+  // Add a new field definition or update an existing one.
+  // If the field key already exists, the definition will be updated.
+  // Note: New fields with `required=true` are not allowed (existing
+  // documents would fail validation).
+  FIELD_DEFINITION_ADD = 0;
+
+  // Delete an existing field definition.
+  // CASCADE behavior: also removes the field value from all documents in
+  // the collection.
+  FIELD_DEFINITION_DELETE = 1;
+}
+
+// Field on which to sort the documents returned from `ListDocuments`.
+enum DocumentsSortBy {
+  DOCUMENTS_SORT_BY_NAME = 0;
+  DOCUMENTS_SORT_BY_SIZE = 1;
+  DOCUMENTS_SORT_BY_AGE = 2;
+}
+
+// Status of a document in a collection.
+enum DocumentStatus {
+  DOCUMENT_STATUS_UNKNOWN = 0;
+  DOCUMENT_STATUS_PROCESSING = 1;
+  DOCUMENT_STATUS_PROCESSED = 2;
+  DOCUMENT_STATUS_FAILED = 3;
+  DOCUMENT_STATUS_CHUNKED = 4;
+  DOCUMENT_STATUS_EMBEDDING = 5;
+  DOCUMENT_STATUS_WRITING = 6;
+}
+
+// Distance space for the HNSW index.
+enum HNSWMetric {
+  HNSW_METRIC_UNKNOWN = 0;
+  HNSW_METRIC_COSINE = 1;
+  HNSW_METRIC_EUCLIDEAN = 2;
+  HNSW_METRIC_INNER_PRODUCT = 3;
+}
+
+// Configuration for the embedding index.
+message IndexConfiguration {
+  // Embedding model that would make the conversion.
+  string model_name = 1;
+}
+
+// Chunking strategy used when ingesting a document.
+message ChunkConfiguration {
+  // Precise config on which kind of unit we will generate chunks.
+  oneof config {
+    // Char based configuration.
+    CharsConfiguration chars_configuration = 1;
+
+    // Token based configuration.
+    TokensConfiguration tokens_configuration = 2;
+
+    // Byte based configuration.
+    BytesConfiguration bytes_configuration = 11;
+  }
+
+  // Remove leading/trailing whitespace.
+  bool strip_whitespace = 3;
+
+  // Inject name into produced chunks.
+  bool inject_name_into_chunks = 4;
+}
+
+// Char-based chunking configuration.
+message CharsConfiguration {
+  // Max length per chunk.
+  int32 max_chunk_size_chars = 1;
+
+  // Overlap between chunks, both sides.
+  int32 chunk_overlap_chars = 2;
+}
+
+// Token-based chunking configuration.
+message TokensConfiguration {
+  // Max length per chunk.
+  int32 max_chunk_size_tokens = 1;
+
+  // Overlap between chunks, both sides.
+  int32 chunk_overlap_tokens = 2;
+
+  // Name of the encoding to use for the tokenizer.
+  string encoding_name = 3;
+}
+
+// Byte-based chunking configuration.
+message BytesConfiguration {
+  // Max length per chunk in bytes.
+  int32 max_chunk_size_bytes = 1;
+
+  // Overlap between chunks in bytes.
+  int32 chunk_overlap_bytes = 2;
+}
+
+// Definition of a per-document field that documents in this collection can
+// (or must) carry.
+message FieldDefinition {
+  // The key/name of the field (e.g., "title", "author", "isbn").
+  string key = 1;
+
+  // If true, this field must be provided for every document added to the
+  // collection. Documents missing required fields will be rejected at
+  // upload time.
+  bool required = 2;
+
+  // If true, this field's value will be injected at the start of each
+  // chunk generated from documents (for contextual retrieval). Improves
+  // retrieval accuracy by providing context about the document.
+  bool inject_into_chunk = 3;
+
+  // If true, this field's value must be unique across all documents
+  // within this collection. Duplicate values will be rejected.
+  bool unique = 4;
+
+  // Optional description of what this field represents.
+  optional string description = 5;
+}
+
+// Update a single field definition with an operation.
+message FieldDefinitionUpdate {
+  // The field definition to add, update, or delete.
+  // For DELETE operations, only the `key` field is required.
+  FieldDefinition field_definition = 1;
+
+  // The operation to perform.
+  FieldDefinitionOperation operation = 2;
+}
+
+// Request message to create a collection.
+message CreateCollectionRequest {
+  // The ID of the team that will own this new collection.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // Name to use for the new collection.
+  string collection_name = 2;
+
+  // Embedding model and configuration used to index documents.
+  optional IndexConfiguration index_configuration = 4;
+
+  // Configuration that dictates how the document contents will be
+  // chunked.
+  optional ChunkConfiguration chunk_configuration = 5;
+
+  // Distance space to use for the HNSW index and search results.
+  optional HNSWMetric metric_space = 7;
+
+  // Field definitions for documents in this collection. Defines what
+  // fields documents can have and their constraints (required, unique,
+  // inject_into_chunk).
+  repeated FieldDefinition field_definitions = 9;
+
+  // Human-friendly description displayed to users and agents.
+  optional string collection_description = 10;
+
+  // deprecated: automatic_embedding, collection_type
+  reserved 3, 6;
+}
+
+// Metadata of a collection.
+message CollectionMetadata {
+  // UUID that represents an ID of the collection.
+  string collection_id = 1;
+
+  // Name of the collection.
+  string collection_name = 2;
+
+  // Timestamp for when the collection was created.
+  google.protobuf.Timestamp created_at = 3;
+
+  // Embedding model and configuration used to index documents.
+  IndexConfiguration index_configuration = 4;
+
+  // Configuration that dictates how the document contents will be
+  // chunked.
+  ChunkConfiguration chunk_configuration = 5;
+
+  // How many documents the collection contains.
+  int32 documents_count = 6;
+
+  // Field definitions for documents in this collection.
+  repeated FieldDefinition field_definitions = 8;
+
+  // Optional description of the collection.
+  optional string collection_description = 9;
+
+  // Total size (in bytes) of all files in the collection.
+  int64 total_file_size = 10;
+
+  // deprecated: collection_type
+  reserved 7;
+}
+
+// Request message to list collections.
+message ListCollectionsRequest {
+  // The ID of the team that owns the collections being listed.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // A limit on the number of objects to be returned. Max 100 items per
+  // request. If not provided, defaults to 100.
+  optional int32 limit = 2;
+
+  // The ordering to sort the returned collections.
+  // If not provided, the default order is descending.
+  optional Ordering order = 3;
+
+  // The parameter that the collections will be sorted by.
+  // If not provided, the default is to sort by `collection_name`.
+  optional CollectionsSortBy sort_by = 4;
+
+  // Optional token to retrieve the next page. Provided by
+  // `pagination_token` in a previous `ListCollectionsResponse`.
+  optional string pagination_token = 5;
+
+  // Filter expression to narrow down results. Supports filtering on:
+  // collection_id, collection_name (partial string matching), created_at,
+  // documents_count.
+  //
+  // Examples:
+  //   - 'collection_id = "collection_123"'
+  //   - 'collection_name:"SEC" AND documents_count:>10'
+  //   - 'collection_name = "report"' (partial match)
+  //   - 'created_at:>2025-01-01T00:00:00Z'
+  optional string filter = 6;
+}
+
+// Response message of listed collections.
+message ListCollectionsResponse {
+  // List of collections.
+  repeated CollectionMetadata collections = 1;
+
+  // Token to be sent in the next `ListCollectionsRequest`'s
+  // `pagination_token` for retrieving the next page.
+  optional string pagination_token = 2;
+}
+
+// Request message to delete a collection.
+message DeleteCollectionRequest {
+  // The ID of the team that owns the collection.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection to delete.
+  string collection_id = 2;
+}
+
+// Request message to get a collection's metadata.
+message GetCollectionMetadataRequest {
+  // The ID of the team that owns the collection.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection to request.
+  string collection_id = 2;
+}
+
+// File-level metadata for a document. Mirrors the underlying file record.
+message FileMetadata {
+  // The document ID.
+  string file_id = 1;
+
+  // The name of the document.
+  string name = 2;
+
+  // The size of the document, in bytes.
+  int64 size_bytes = 3;
+
+  // MIME type.
+  string content_type = 4;
+
+  // Timestamp for when the document was created.
+  google.protobuf.Timestamp created_at = 5;
+
+  // Timestamp for when the document will expire (unset = no expiry).
+  google.protobuf.Timestamp expires_at = 6;
+
+  // Blake3 hash of the document.
+  string hash = 7;
+
+  // Expected values: "Initializing", "Uploading", "Complete", "Failed".
+  optional string upload_status = 8;
+
+  // Error message if upload failed.
+  optional string upload_error_message = 9;
+
+  // Processing status of the file (pending, processing, complete,
+  // failed, skipped).
+  optional string processing_status = 10;
+
+  // Optional hierarchical path for the file (e.g., "folder1/subfolder").
+  // Relative to the team root and does not include the filename.
+  optional string file_path = 11;
+}
+
+// Document metadata which includes additional collections information.
+message DocumentMetadata {
+  // File metadata.
+  FileMetadata file_metadata = 1;
+
+  // Document-level fields as defined by the collection's
+  // `field_definitions`. Validated against those definitions: required
+  // fields must be present, unique fields must be unique within the
+  // collection, all fields are validated at upload/update time.
+  map<string, string> fields = 2;
+
+  // Status of the document.
+  DocumentStatus status = 3;
+
+  // Any error that occurred while processing.
+  optional string error_message = 4;
+
+  // Timestamp of when this document was last indexed. Empty if it
+  // hasn't been.
+  google.protobuf.Timestamp last_indexed_at = 5;
+
+  // Total number of chunks this document was split into during RAG
+  // processing.
+  optional int32 chunk_count = 6;
+
+  // Number of chunks that have completed embedding.
+  optional int64 chunks_processed_count = 7;
+}
+
+// Request message for listing documents.
+message ListDocumentsRequest {
+  // The ID of the team owning the documents.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection to list documents from.
+  string collection_id = 2;
+
+  // A limit on the number of objects to be returned. Max 100 items per
+  // request. If not provided, defaults to 100.
+  optional int32 limit = 3;
+
+  // The ordering to sort the returned documents.
+  // If not provided, the default order is descending.
+  optional Ordering order = 4;
+
+  // The parameter that the documents will be sorted by.
+  // If not provided, the default is to sort by `name`.
+  optional DocumentsSortBy sort_by = 5;
+
+  // Optional token to retrieve the next page. Provided by
+  // `pagination_token` in a previous `ListDocumentsResponse`.
+  optional string pagination_token = 6;
+
+  // The name of the documents to get.
+  // DEPRECATED: use the `filter` field instead with `name:value`.
+  optional string name = 7;
+
+  // Filter expression to narrow down results. Supports filtering on
+  // file metadata (name, content_type, size_bytes, created_at) and
+  // document fields (status, fields.{key}).
+  //
+  // Examples:
+  //   - 'status:DOCUMENT_STATUS_PROCESSED'
+  //   - 'name:"quarterly" AND status:!DOCUMENT_STATUS_FAILED'
+  //   - 'fields.isbn:"978-1-234567-89-0"'
+  //   - 'size_bytes:>5000000 AND content_type:application/pdf'
+  optional string filter = 8;
+}
+
+// Response message for listing documents.
+message ListDocumentsResponse {
+  // List of documents.
+  repeated DocumentMetadata documents = 1;
+
+  // Token to be sent in the next `ListDocumentsRequest`'s
+  // `pagination_token` for retrieving the next page.
+  optional string pagination_token = 2;
+}
+
+// Request message for retrieving metadata of a document.
+message GetDocumentMetadataRequest {
+  // The ID of the document to use for this request.
+  string file_id = 1;
+
+  // The ID of the team the document belongs to.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 2;
+
+  // The ID of the collection this document belongs to.
+  string collection_id = 3;
+}
+
+// Request to add an existing file (as a document) to a collection.
+message AddDocumentToCollectionRequest {
+  // The ID of the document to add.
+  string file_id = 1;
+
+  // The ID of the team the document belongs to.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 2;
+
+  // The id of the collection this document will be added to.
+  string collection_id = 3;
+
+  // User-defined fields to add to this document in this new collection.
+  map<string, string> fields = 5;
+
+  // Deprecated: `override_existing`.
+  reserved 4;
+}
+
+// Request to remove a document from a collection. The underlying file is
+// not deleted.
+message RemoveDocumentFromCollectionRequest {
+  // The file ID of the document to remove.
+  string file_id = 1;
+
+  // The ID of the team that owns the collection.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 2;
+
+  // The ID of the collection the document will be removed from.
+  string collection_id = 3;
+}
+
+// Update a document's data and metadata.
+message UpdateDocumentRequest {
+  // The ID of the team that owns the document.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection that the document is part of.
+  string collection_id = 2;
+
+  // The ID of the file to update.
+  string file_id = 3;
+
+  // New name of the document.
+  optional string name = 4;
+
+  // New bytes of the document.
+  optional bytes data = 5;
+
+  // New MIME type of the document.
+  optional string content_type = 6;
+
+  // New user-defined fields of data for this document.
+  map<string, string> fields = 7;
+}
+
+// Request to regenerate the index/chunks for a given document.
+message ReIndexDocumentRequest {
+  // The ID of the team that owns the document.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection that includes the document.
+  string collection_id = 2;
+
+  // The ID of the file to re-index.
+  string file_id = 3;
+}
+
+// Request message to update a collection.
+message UpdateCollectionRequest {
+  // The ID of the team that owns the collection.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection to update.
+  string collection_id = 2;
+
+  // New name of the collection.
+  optional string collection_name = 3;
+
+  // New chunking configuration for documents in the collection.
+  optional ChunkConfiguration chunk_configuration = 4;
+
+  // Field definition updates to apply to this collection (ADD or
+  // DELETE).
+  repeated FieldDefinitionUpdate field_definition_updates = 5;
+
+  // New description of the collection.
+  optional string collection_description = 6;
+}
+
+// Request the metadata of multiple documents in one call.
+message BatchGetDocumentsRequest {
+  // The ID of the team that owns the documents.
+  // If not provided, the team ID will be derived from your request
+  // credentials.
+  optional string team_id = 1;
+
+  // The ID of the collection that includes the documents.
+  string collection_id = 2;
+
+  // The IDs of the files to retrieve the document metadata for.
+  repeated string file_ids = 3;
+}
+
+// Response message for the documents' metadata batch request.
+message BatchGetDocumentsResponse {
+  // Documents' metadata in the same order as `file_ids` was requested.
+  repeated DocumentMetadata documents = 1;
+}
+
+// Request to generate an LLM-written description for a collection.
+message GenerateCollectionDescriptionRequest {
+  // The collection to generate a description for.
+  string collection_id = 1;
+}
+
+// Response containing the generated description.
+message GenerateCollectionDescriptionResponse {
+  // The generated description, or empty string if generation failed or
+  // the collection has no processed files.
+  string collection_description = 1;
+}
