@@ -45,6 +45,12 @@ enum VideoResolution {
   // 720p resolution.
   // Dimensions vary by aspect ratio
   VIDEO_RESOLUTION_720P = 2;
+
+  // 1080p resolution.
+  // Dimensions vary by aspect ratio.
+  // Supported on models that advertise 1080p (e.g. grok-imagine-video-1.5 for
+  // image-to-video); not available on all video models.
+  VIDEO_RESOLUTION_1080P = 3;
 }
 
 // Specifies a video by URL or file reference for video editing.
