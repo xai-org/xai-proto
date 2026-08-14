@@ -932,8 +932,9 @@ message SearchParameters {
   google.protobuf.Timestamp to_date = 5;
 
   // If set to true, the model will return a list of citations (URLs or references)
-  // to the sources used in generating the response. Defaults to true.
-  bool return_citations = 7;
+  // to the sources used in generating the response.
+  // When unset, defaults to true (citations are returned).
+  optional bool return_citations = 7;
 
   // Optional limit on the number of search results to consider
   // when generating a response. Must be in the range [1, 30]. Defaults to 15.
