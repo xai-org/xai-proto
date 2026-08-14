@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package xai_api;
 
+import "google/protobuf/timestamp.proto";
 import "xai/api/v1/usage.proto";
 
 // An API service for interaction with image generation models.
@@ -53,6 +54,62 @@ message GenerateImageRequest {
   // Each image is either an image URL or a base64-encoded version of the image.
   // This field cannot be set together with the `image` field.
   repeated ImageUrlContent images = 17;
+
+  // Optional output storage configuration. When present, the generated
+  // image(s) are stored in the Files API and a file_id is returned in
+  // the response alongside the ephemeral URL.
+  optional StorageOptions storage_options = 19;
+}
+
+// Configuration for storing generation output in the Files API.
+message StorageOptions {
+  // Filename for the stored file.
+  string filename = 1;
+  // Seconds from now until the file auto-expires. If omitted, the file
+  // does not expire.
+  optional int64 expires_after = 2;
+  // When present, a public URL is created for the stored file after upload.
+  // The public URL is accessible without authentication.
+  // Omit entirely to store the file privately (no public URL).
+  optional PublicUrlOptions public_url = 3;
+}
+
+// Configuration for creating a public URL alongside file storage.
+message PublicUrlOptions {
+  // Seconds from now until the public URL expires.
+  //
+  // If omitted and the file has a TTL (`StorageOptions.expires_after`),
+  // the public URL inherits the file's expiry. If omitted and the file
+  // has no TTL, the public URL remains valid indefinitely until the file
+  // is deleted or the URL is explicitly revoked via `RevokePublicUrl`.
+  // The file itself always remains accessible via authenticated endpoints
+  // after the public URL expires.
+  optional int64 expires_after = 1;
+}
+
+// Information about a generated file stored in the Files API.
+message FileOutput {
+  // Files API file_id of the stored file.
+  string file_id = 1;
+  // Filename of the stored file.
+  string filename = 2;
+  reserved 3;
+  // Public URL for the stored file. Only present when the request included
+  // storage_options.public_url and creation succeeded.
+  optional string public_url = 4;
+  // When the public URL expires. Only present when public_url is set and
+  // has an independent expiry (i.e. the request specified
+  // public_url.expires_after, or the file has a TTL). Absent when the
+  // public URL is valid indefinitely.
+  optional google.protobuf.Timestamp public_url_expires_at = 5;
+  // When the stored file expires and will be automatically deleted. Only
+  // present when the file has an expiration (storage_options.expires_after
+  // was set).
+  optional google.protobuf.Timestamp expires_at = 6;
+  // Human-readable error when storage_options.public_url was set but
+  // public URL creation failed. The file itself was stored successfully —
+  // the public URL can be retried via `CreatePublicUrl`.
+  optional string public_url_error = 7;
 }
 
 // The response from the image generation models containing the generated image(s).
@@ -86,18 +143,35 @@ message GeneratedImage {
   // The field will be true if the image respect moderation rules. Otherwise
   // the field will be false and the image field is replaced by a placeholder.
   bool respect_moderation = 4;
+
+  // Storage info for the generated image. Only present when the request
+  // included `storage_options` and the upload succeeded.
+  optional FileOutput file_output = 8;
+
+  // Human-readable error when `storage_options` was set but the upload
+  // failed. Only present on storage failure; absent on success or when
+  // storage was not requested.
+  optional string storage_error = 9;
 }
 
 // Contains data relating to an image that is provided to the model.
 message ImageUrlContent {
-  // This is either an image URL or a base64-encoded version of the image.
-  // The following image formats are supported: PNG, JPG, and WebP.
-  // If an image URL is provided, the image will be downloaded for every API
-  // request without being cached. Images are fetched using
-  // "XaiImageApiFetch/1.0" user agent, and will timeout after 5 seconds.
-  // The image size is limited to 10 MiB. If the image download fails, the API
-  // request will fail as well.
-  string image_url = 1;
+  // The source of the image — either a direct URL/base64 string or a
+  // file_id from the xAI Files API. Exactly one must be set.
+  oneof source {
+    // This is either an image URL or a base64-encoded version of the image.
+    // The following image formats are supported: PNG, JPG, and WebP.
+    // If an image URL is provided, the image will be downloaded for every API
+    // request without being cached. Images are fetched using
+    // "XaiImageApiFetch/1.0" user agent, and will timeout after 5 seconds.
+    // The image size is limited to 10 MiB. If the image download fails, the API
+    // request will fail as well.
+    string image_url = 1;
+
+    // A file ID from the xAI Files API. The file must be an image
+    // (JPEG, PNG, or WebP).
+    string file_id = 3;
+  }
 
   // The level of pre-processing resolution that will be applied to the image.
   ImageDetail detail = 2;

@@ -47,11 +47,19 @@ enum VideoResolution {
   VIDEO_RESOLUTION_720P = 2;
 }
 
-// Specifies a video by URL for video editing.
+// Specifies a video by URL or file reference for video editing.
 message VideoUrlContent {
-  // Either a URL of the video (e.g., a public URL) or a base64-encoded video
-  // as a data URL (e.g., "data:video/mp4;base64,...").
-  string url = 1;
+  // The source of the video — either a direct URL/base64 string or a
+  // file_id from the xAI Files API. Exactly one must be set.
+  oneof source {
+    // Either a URL of the video (e.g., a public URL) or a base64-encoded video
+    // as a data URL (e.g., "data:video/mp4;base64,...").
+    string url = 1;
+
+    // A file ID from the xAI Files API. The file must be a video
+    // (e.g., MP4).
+    string file_id = 2;
+  }
 }
 
 // An API service for interaction with video generation models.
@@ -110,6 +118,11 @@ message GenerateVideoRequest {
   // When provided (and `image` is not set), generates video using these images
   // as style/content references.
   repeated ImageUrlContent reference_images = 13;
+
+  // Optional output storage configuration. When present, the generated
+  // video is stored in the Files API and a file_id is returned in
+  // the response alongside the ephemeral URL.
+  optional StorageOptions storage_options = 14;
 }
 
 // Request for retrieving deferred video generation results.
@@ -154,6 +167,15 @@ message GeneratedVideo {
   // The field will be true if the video respects moderation rules. Otherwise
   // the field will be false and the video url field will be empty.
   bool respect_moderation = 5;
+
+  // Storage info for the generated video. Only present when the request
+  // included `storage_options` and the upload succeeded.
+  optional FileOutput file_output = 6;
+
+  // Human-readable error when `storage_options` was set but the upload
+  // failed. Only present on storage failure; absent on success or when
+  // storage was not requested.
+  optional string storage_error = 7;
 }
 
 // Response from GetDeferredVideo, including the response if the video
@@ -191,4 +213,9 @@ message ExtendVideoRequest {
   // Duration of the extension segment to generate in seconds (1-10).
   // Defaults to 6 seconds if not specified.
   optional int32 duration = 4;
+
+  // Optional output storage configuration. When present, the generated
+  // video is stored in the Files API and a file_id is returned in
+  // the response alongside the ephemeral URL.
+  optional StorageOptions storage_options = 6;
 }
