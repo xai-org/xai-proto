@@ -36,6 +36,12 @@ message GenerateImageRequest {
   // in. See ImageFormat enum for options.
   ImageFormat format = 11;
 
+  // Optional quality setting for image generation.
+  // Only supported by grok-imagine models.
+  // Defaults to medium. Some models restrict the accepted values (a request
+  // outside the model's supported set is rejected).
+  optional ImageQuality quality = 12;
+
   // Optional aspect ratio for image generation/editing.
   // Only supported by grok-imagine models.
   // Defaults to 1:1 if not specified. Auto is only supported for image generation

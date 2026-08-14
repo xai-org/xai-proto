@@ -672,6 +672,8 @@ message Tool {
     MCP mcp = 7;
     // Built in attachment search.
     AttachmentSearch attachment_search = 8;
+    // Built in image generation.
+    ImageGeneration image_generation = 10;
   }
 }
 
@@ -767,6 +769,13 @@ message XSearch {
 
 message CodeExecution {}
 
+message ImageGeneration {
+  // Which image capabilities to expose to the model. One of "auto" (the default;
+  // both generation and editing), "generate" (text-to-image only), or
+  // "edit" (image editing only).
+  optional string action = 1;
+}
+
 message CollectionsSearch {
   // The ID(s) of the source collection(s) within which the search should be performed.
   // A maximum of 10 collections IDs can be used for search.
@@ -839,6 +848,10 @@ enum ToolCallType {
   // Indicates the tool is a server-side attachment_search tool, and client side won't need to execute.
   // Maps to `attachment_search_call` type in OAI Responses API.
   TOOL_CALL_TYPE_ATTACHMENT_SEARCH_TOOL = 7;
+
+  // Indicates the tool is a server-side image_generation tool, and client side won't need to execute.
+  // Maps to `image_generation_call` type in OAI Responses API.
+  TOOL_CALL_TYPE_IMAGE_GENERATION_TOOL = 10;
 }
 
 enum ToolCallStatus {

@@ -62,6 +62,20 @@ message VideoUrlContent {
   }
 }
 
+// Reference audio input for video generation.
+message AudioUrlContent {
+  reserved 1;
+
+  // The source of the audio. Must be set.
+  oneof source {
+    // Identifier of a first-party preset voice (e.g. "ara"), using the same
+    // voice identifiers as the TTS API. Resolved server-side to a curated
+    // reference clip from the model's voice-preset catalog. Only supported
+    // by models that accept reference audio.
+    string voice_id = 2;
+  }
+}
+
 // An API service for interaction with video generation models.
 service Video {
   // Create a video based on a text prompt and optionally an image.
@@ -123,6 +137,21 @@ message GenerateVideoRequest {
   // video is stored in the Files API and a file_id is returned in
   // the response alongside the ephemeral URL.
   optional StorageOptions storage_options = 14;
+
+  reserved 15;
+
+  // Optional reference audio (voice identity) for reference-to-video
+  // generation. Each entry selects a first-party preset voice via
+  // `voice_id` (same identifiers as the TTS API). Only supported by select
+  // video models; at most three entries. May be provided without
+  // reference_images (audio-only reference-to-video) — at least one
+  // reference of either kind selects the reference-to-video mode.
+  repeated AudioUrlContent reference_audios = 16;
+
+  // Whether the generated video includes an audio track. Defaults to true.
+  // Set to false for a silent video (the audio track is stripped
+  // server-side after generation).
+  optional bool generate_audio = 17;
 }
 
 // Request for retrieving deferred video generation results.
@@ -218,4 +247,6 @@ message ExtendVideoRequest {
   // video is stored in the Files API and a file_id is returned in
   // the response alongside the ephemeral URL.
   optional StorageOptions storage_options = 6;
+
+  reserved 7;
 }
