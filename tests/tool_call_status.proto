@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package test;
+
+// Before: IN_PROGRESS at value 0 (the bug)
+enum ToolCallStatusBefore {
+  TOOL_CALL_STATUS_BEFORE_IN_PROGRESS = 0;
+  TOOL_CALL_STATUS_BEFORE_COMPLETED = 1;
+  TOOL_CALL_STATUS_BEFORE_INCOMPLETE = 2;
+  TOOL_CALL_STATUS_BEFORE_FAILED = 3;
+}
+
+// After: UNSPECIFIED at value 0 (the fix), IN_PROGRESS moved to 4
+enum ToolCallStatusAfter {
+  TOOL_CALL_STATUS_AFTER_UNSPECIFIED = 0;
+  TOOL_CALL_STATUS_AFTER_COMPLETED = 1;
+  TOOL_CALL_STATUS_AFTER_INCOMPLETE = 2;
+  TOOL_CALL_STATUS_AFTER_FAILED = 3;
+  TOOL_CALL_STATUS_AFTER_IN_PROGRESS = 4;
+}
+
+message ToolCallBefore {
+  ToolCallStatusBefore status = 1;
+}
+
+message ToolCallAfter {
+  ToolCallStatusAfter status = 1;
+}

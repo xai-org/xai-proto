@@ -842,8 +842,10 @@ enum ToolCallType {
 }
 
 enum ToolCallStatus {
-  // The tool call is in progress.
-  TOOL_CALL_STATUS_IN_PROGRESS = 0;
+  // Default value when the status has not been explicitly set.
+  // Servers should treat this as an unknown status and determine
+  // the actual state from context.
+  TOOL_CALL_STATUS_UNSPECIFIED = 0;
 
   // The tool call is completed.
   TOOL_CALL_STATUS_COMPLETED = 1;
@@ -853,6 +855,9 @@ enum ToolCallStatus {
 
   // The tool call is failed.
   TOOL_CALL_STATUS_FAILED = 3;
+
+  // The tool call is in progress.
+  TOOL_CALL_STATUS_IN_PROGRESS = 4;
 }
 
 // Content of a tool call, typically in a response from model.
