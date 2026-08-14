@@ -684,10 +684,18 @@ message MCP {
   string server_url = 3;
   // A list of tool names that are allowed to be called by the model. If empty, all tools are allowed.
   repeated string allowed_tool_names = 4;
-  // An optional authorization token to use when calling the MCP server. This will be set as the Authorization header.
-  optional string authorization = 5;
+  // An optional authorization token to use when calling the MCP server.
+  // This will be set as the Authorization header.
+  //
+  // SENSITIVE: This field contains credentials and must not be logged,
+  // persisted in analytics pipelines, or included in debug output.
+  // Prefer using a secret reference or vault ID where possible.
+  optional string authorization = 5 [debug_redact = true];
   // Extra headers that will be included in the request to the MCP server.
-  map<string, string> extra_headers = 6;
+  //
+  // SENSITIVE: May contain authorization tokens or API keys.
+  // Must not be logged or persisted in analytics pipelines.
+  map<string, string> extra_headers = 6 [debug_redact = true];
 }
 
 message WebSearch {
