@@ -60,7 +60,7 @@ message GetCompletionsRequest {
   // be generated if the parameter is unset. Each completion is charged at the
   // same rate. You can generate at most 128 concurrent completions.
   // PLEASE NOTE: This field is deprecated and will be removed in the future.
-  optional int32 n = 8;
+  optional int32 n = 8 [deprecated = true];
 
   // The maximum number of tokens to sample. If unset, the model samples until
   // one of the following stop-conditions is reached:
