@@ -62,6 +62,7 @@ message RerankerModel {
 // RankingMetric is the metric to use for the search.
 // Deprecated: Metric now comes from what is set in the collection creation.
 enum RankingMetric {
+  option deprecated = true;
   RANKING_METRIC_UNKNOWN = 0;
   RANKING_METRIC_L2_DISTANCE = 1;
   RANKING_METRIC_COSINE_SIMILARITY = 2;
