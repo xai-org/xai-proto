@@ -32,7 +32,7 @@ message SamplingUsage {
   // when live search is enabled. e.g. If a live search query returns citations
   // from both X and Web and news sources, this will be 3. If it returns
   // citations from only X, this will be 1.
-  int32 num_sources_used = 8;
+  int32 num_sources_used = 8 [deprecated = true];
 
   // List of server side tools called.
   repeated ServerSideTool server_side_tools_used = 9;
