@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Added
-- Added experimental `INCLUDE_OPTION_TOOL_CALL_STREAMING` to `IncludeOption` and experimental `ToolCall.index` field to support streaming client-side tool calls incrementally as they are generated.
+- Added experimental `INCLUDE_OPTION_TOOL_CALL_STREAMING` to `IncludeOption` and experimental `ToolCall.index` field to support streaming client-side tool calls incrementally as they are generated. Known issue: the option is currently broken when combined with server-side tools.
 
 ### Changed
 - Updates or modifications to existing features.

@@ -563,6 +563,12 @@ enum IncludeOption {
   // on that entry alone.
   // This option is only available for streaming responses and is only
   // supported by models that support it; it is ignored otherwise.
+  //
+  // KNOWN ISSUE: This option is currently broken when the request also uses
+  // any server-side tool (for example web search, X search, code execution,
+  // collections search, or MCP). Do not combine this option with server-side
+  // tools; only use it with requests whose tools are all client-side
+  // functions.
   INCLUDE_OPTION_TOOL_CALL_STREAMING = 10;
 }
 
