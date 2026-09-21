@@ -546,6 +546,24 @@ enum IncludeOption {
 
   // Generated file output from the code execution environment
   INCLUDE_OPTION_CODE_EXECUTION_FILES_OUTPUT = 9;
+
+  // EXPERIMENTAL: This option is experimental and its behavior may change or be
+  // removed in a future release without a major version bump.
+  //
+  // Stream back client-side tool calls incrementally as the model generates
+  // them, instead of only emitting each tool call once it is complete.
+  // When included, the stream contains additional `ToolCall` entries in
+  // `Delta.tool_calls` with `status` set to `TOOL_CALL_STATUS_IN_PROGRESS`.
+  // Each such entry carries a fragment of the `FunctionCall.name` and/or
+  // `FunctionCall.arguments` (either may be empty) that the client should
+  // append to the tool call identified by the entry's `id` and `index`.
+  // Once generation finishes, a final `ToolCall` with `status` set to
+  // `TOOL_CALL_STATUS_COMPLETED` is streamed containing the full name and
+  // arguments, so clients that do not want to accumulate fragments can rely
+  // on that entry alone.
+  // This option is only available for streaming responses and is only
+  // supported by models that support it; it is ignored otherwise.
+  INCLUDE_OPTION_TOOL_CALL_STREAMING = 10;
 }
 
 // A message in a conversation. This message is part of the model input. Each
@@ -882,6 +900,15 @@ message ToolCall {
 
   // Error message if the tool call is failed.
   optional string error_message = 4;
+
+  // EXPERIMENTAL: This field is experimental and its behavior may change or be
+  // removed in a future release without a major version bump.
+  //
+  // The index of the tool call within the message's `tool_calls` array.
+  // Only populated on the incremental `TOOL_CALL_STATUS_IN_PROGRESS` entries
+  // streamed when `INCLUDE_OPTION_TOOL_CALL_STREAMING` is requested, so that
+  // clients can accumulate fragments belonging to the same tool call.
+  optional int32 index = 5;
 
   // Information regarding invoking the tool call.
   oneof tool {

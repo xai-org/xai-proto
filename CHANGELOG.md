@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Added
-- New features or functionalities added to the project.
+- Added experimental `INCLUDE_OPTION_TOOL_CALL_STREAMING` to `IncludeOption` and experimental `ToolCall.index` field to support streaming client-side tool calls incrementally as they are generated.
 
 ### Changed
 - Updates or modifications to existing features.
