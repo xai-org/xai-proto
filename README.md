@@ -1,56 +1,115 @@
-# xAI API Protobuf Definitions
+# Collections Search Retrieval – Examples
 
-This repository hosts the public Protocol Buffer (protobuf) definitions for xAI's gRPC-based APIs. These protobuf files define the service interfaces and message structures compatible with xAI's gRPC servers, enabling developers to generate client SDKs in any language supported by the protobuf and gRPC ecosystems. xAI provides an official SDK for [Python](https://github.com/xai-org/xai-sdk-python), which is built on top of these protobuf definitions.
+This document provides illustrative, language-agnostic examples showing how
+retrieval modes can be configured for Collections Search using the public
+protobuf API definitions.
 
-## Code Generation from proto definitions
+Note:
+These examples are documentation-only and based strictly on the public .proto
+schema. They do not describe internal implementation details and do not
+guarantee specific ranking behavior.
 
-You have multiple options for generating code from these `.proto` files, depending on your preferences and tech stack. While we describe using the [Buf CLI](https://buf.build/product/cli) for a streamlined workflow with support for linting and remote plugins, it is **not a requirement**. You are free to use `protoc` directly or leverage language-specific tools like `grpcio-tools` for Python, or any other compatible toolset. The choice is entirely up to you. The instructions below include guidance for using Buf, but alternative methods are equally valid.
+---
 
+Where this is defined in the API
 
-### Code Generation with Buf CLI
+The retrieval configuration is defined in the following protobuf files:
 
-#### Prerequisites
+- proto/xai/api/v1/chat.proto
+  - message CollectionsSearch
+  - oneof retrieval_mode
+    - HybridRetrieval hybrid_retrieval
+    - SemanticRetrieval semantic_retrieval
+    - KeywordRetrieval keyword_retrieval
 
-- Install the buf cli : Follow the [official installation guide](https://buf.build/docs/cli/installation/).
+- proto/xai/api/v1/documents.proto
+  - HybridRetrieval
+  - SemanticRetrieval
+  - KeywordRetrieval
+  - RerankerModel
+  - ReciprocalRankFusion
 
+---
 
-The `buf.gen.yaml` file includes plugins for generating Python code, as used in xAI's official SDK. However, you are free to modify `buf.gen.yaml` to include plugins for other languages or frameworks that suit your tech stack, enabling the creation of custom clients or SDKs tailored to your needs. To generate code using the provided configuration, run:
+Retrieval modes (plain English)
 
-```bash
-buf generate
-```
+Hybrid retrieval:
+Combines semantic and keyword-based retrieval, followed by optional reranking.
+This is the default mode when no retrieval mode is explicitly set.
 
-This command will:
-- Remove previously generated files (due to `clean: true` in `buf.gen.yaml`).
-- Generate Python code in the `gen/python` directory, using plugins for Python (`protocolbuffers/python`, `grpc/python`, `protocolbuffers/pyi`).
-- Can be customized by editing `buf.gen.yaml` to support additional languages via Buf's remote plugin ecosystem.
-- Can also be customized to leverage locally installed plugins as well as remote ones.
+Semantic retrieval:
+Uses semantic similarity to retrieve conceptually related content.
+Useful when meaning matters more than exact wording.
 
-## Versioning
+Keyword retrieval:
+Prioritizes exact term matching.
+Useful for deterministic or compliance-oriented queries.
 
-xAI's API protobuf definitions generally follow [Semantic Versioning (SemVer)](https://semver.org). The versioning approach is as follows:
+---
 
-- **Major Versions (e.g., `v1`, `v2`)**: Introduce breaking changes, such as:
-  - Removing or renaming fields, messages, or services.
-  - Changing field types or behaviors in a non-backward-compatible way.
-- **Minor Versions**: Add new features or fields in a backward-compatible manner.
-- **Patch Versions**: Include bug fixes or minor updates that do not affect compatibility.
+Protobuf text-format examples
 
-The protobuf files are organized by major version (e.g., `proto/xai/api/v1`). Breaking changes will be introduced in a new major version directory (e.g., `proto/xai/api/v2`) to ensure existing clients remain unaffected.
+Example 1 – Hybrid retrieval with reranker model
 
-## Official SDKs
+collections_search:
+  collection_ids: "example-collection-id"
+  limit: 10
+  instructions: "Find relevant content about battery thermal management."
 
-xAI maintains official SDKs for:
-- [**Python**](https://github.com/xai-org/xai-sdk-python): Built using the generated code from the Python plugins in `buf.gen.yaml`.
+  hybrid_retrieval:
+    search_multiplier: 5
+    reranker_model:
+      model: "reranker-default"
+      instructions: "Prefer precise technical references."
 
-These SDKs are available separately and provide a convenient, language-specific interface for interacting with xAI's gRPC APIs. For more details, visit [xAI's API documentation](https://docs.x.ai/).
+Example 2 – Hybrid retrieval with Reciprocal Rank Fusion
 
-## Contributing
+collections_search:
+  collection_ids: "example-collection-id"
+  limit: 10
 
-Functional changes to the protobuf definitions are not accepted at this time, as these files are maintained by xAI to ensure compatibility with our API services. However, changes to improve documentation, fix typos, etc., are welcome. If you have feedback or suggestions, please contact xAI through the [official API support channels](mailto:support@x.ai).
+  hybrid_retrieval:
+    search_multiplier: 3
+    reciprocal_rank_fusion:
+      k: 60
+      embedding_weight: 0.6
+      text_weight: 0.4
 
-Please see the [contributing documentation](./CONTRIBUTING.md) for full details on contributing to this repository.
+Example 3 – Semantic retrieval
 
-## License
+collections_search:
+  collection_ids: "example-collection-id"
+  limit: 10
 
-The protobuf definitions and related files are licensed under the Apache-2.0 License
+  semantic_retrieval:
+    reranker:
+      model: "reranker-default"
+      instructions: "Favor higher-quality, conceptually relevant sources."
+
+Example 4 – Keyword retrieval
+
+collections_search:
+  collection_ids: "example-collection-id"
+  limit: 10
+
+  keyword_retrieval:
+    reranker:
+      model: "reranker-default"
+      instructions: "Rank exact matches higher than partial matches."
+
+---
+
+Choosing the right retrieval mode
+
+- Use HYBRID for most cases (default).
+- Use SEMANTIC when meaning and context matter most.
+- Use KEYWORD when exact term matching is required.
+
+---
+
+Notes on defaults and limits
+
+- CollectionsSearch.limit defaults to 10 when unset.
+- HybridRetrieval.search_multiplier defaults to 1 and must be in the range 1 to 100.
+- ReciprocalRankFusion.k defaults to 60 when unset.
+- Reranking behavior and defaults may evolve over time.
