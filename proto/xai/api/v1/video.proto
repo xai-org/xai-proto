@@ -104,14 +104,30 @@ service Video {
   rpc GetDeferredVideo(GetDeferredVideoRequest) returns (GetDeferredVideoResponse) {}
 }
 
+// A mid-video keyframe anchor: the image appears literally at `timestamp_s`
+// seconds, strictly inside the clip (endpoints use `image` / `last_frame`).
+// Timestamps snap to the engine's keyframe grid (one anchor per 1/3 second),
+// so anchors closer together than that are rejected.
+message VideoKeyframe {
+  // The pinned image. Supports the same formats as image generation: URL or
+  // base64-encoded image.
+  ImageUrlContent image = 1;
+
+  // Anchor time in seconds, strictly inside the clip (0 < t < duration).
+  float timestamp_s = 2;
+}
+
 // Request message for generating a video.
 message GenerateVideoRequest {
   // Input prompt to generate a video from.
   string prompt = 1;
 
-  // Optional input image for image-to-video generation.
-  // If provided, generates video with this image as the first frame.
-  // If omitted, generates text-to-video.
+  // Optional input image used as the video's exact FIRST frame.
+  // Alone, selects image-to-video generation. Combined with
+  // reference_images / reference_audios / last_frame / keyframes (select
+  // models only), the video generates from those references while starting
+  // literally on this image. If omitted, generates text-to-video (or
+  // reference-to-video when references are present).
   // Supports the same formats as image generation: URL or base64-encoded image.
   ImageUrlContent image = 2;
 
@@ -135,8 +151,8 @@ message GenerateVideoRequest {
   optional VideoResolution resolution = 8;
 
   // Optional reference images for reference-to-video (R2V) generation.
-  // When provided (and `image` is not set), generates video using these images
-  // as style/content references.
+  // When provided, generates video using these images as style/content
+  // references.
   repeated ImageUrlContent reference_images = 13;
 
   // Optional output storage configuration. When present, the generated
@@ -158,6 +174,19 @@ message GenerateVideoRequest {
   // Set to false for a silent video (the audio track is stripped
   // server-side after generation).
   optional bool generate_audio = 17;
+
+  // Optional image pinned as the video's exact LAST frame — the clip ends
+  // arriving on it (unlike reference_images, which condition the video and
+  // appear re-rendered). With image, the video interpolates between the two
+  // frames. Only supported by select video models. Supports URL or
+  // base64-encoded image.
+  ImageUrlContent last_frame = 18;
+
+  // Optional mid-video keyframe anchors, strictly between the endpoint pins
+  // (`image` as the first frame, `last_frame` as the last). Selects
+  // reference-to-video like the other reference inputs. Only supported by
+  // select video models; at most 4 entries.
+  repeated VideoKeyframe keyframes = 20;
 }
 
 // Request for retrieving deferred video generation results.
