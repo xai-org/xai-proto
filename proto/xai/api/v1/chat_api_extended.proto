@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package xai_api;
+
+import "google/protobuf/empty.proto";
+
+// Chat API service for conversational AI interactions
+service ChatAPI {
+  // Stream a chat completion response
+  rpc StreamChat(ChatRequest) returns (stream ChatResponse) {}
+  
+  // Get a single chat completion
+  rpc Chat(ChatRequest) returns (ChatResponse) {}
+}
+
+// Chat request message
+message ChatRequest {
+  // The model to use for chat (e.g., "gpt-4")
+  string model = 1;
+  
+  // Array of messages in the conversation
+  repeated Message messages = 2;
+  
+  // Sampling temperature (0.0 - 2.0), higher values increase randomness
+  float temperature = 3;
+  
+  // Maximum tokens to generate in the response
+  int32 max_tokens = 4;
+}
+
+// Message in a conversation
+message Message {
+  // Role of the message sender (system, user, or assistant)
+  string role = 1;
+  
+  // Content of the message
+  string content = 2;
+}
+
+// Chat response message
+message ChatResponse {
+  // Generated text content
+  string content = 1;
+  
+  // Stop reason (stop, length, content_filter, etc.)
+  string stop_reason = 2;
+  
+  // Token usage information
+  TokenUsage usage = 3;
+}
+
+// Token usage statistics
+message TokenUsage {
+  // Tokens used in the prompt
+  int32 prompt_tokens = 1;
+  
+  // Tokens used in the completion
+  int32 completion_tokens = 2;
+  
+  // Total tokens used
+  int32 total_tokens = 3;
+}
