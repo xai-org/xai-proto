@@ -179,6 +179,13 @@ message GetCompletionsRequest {
   // Processing tier for this request. Set to SERVICE_TIER_PRIORITY for
   // higher scheduling priority at a higher price.
   ServiceTier service_tier = 31;
+
+  // Supplied by the API client to identify the end user behind this request.
+  // A stable string that uniquely identifies each of your users; hash your
+  // internal user id or username rather than sending an email or name. Stored
+  // with the request metadata so a usage-policy violation can be attributed
+  // to that user rather than to the API key.
+  optional string safety_identifier = 34;
 }
 
 message GetChatCompletionResponse {
