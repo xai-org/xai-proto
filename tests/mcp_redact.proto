@@ -1,0 +1,14 @@
+syntax = "proto3";
+package test;
+
+// MCPBefore: no debug_redact — credentials visible in debug output
+message MCPBefore {
+  optional string authorization = 1;
+  map<string, string> extra_headers = 2;
+}
+
+// MCPAfter: debug_redact = true — credentials redacted in debug output
+message MCPAfter {
+  optional string authorization = 1 [debug_redact = true];
+  map<string, string> extra_headers = 2 [debug_redact = true];
+}
