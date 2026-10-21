@@ -40,6 +40,39 @@ service Chat {
   rpc CompactContext(CompactContextRequest) returns (CompactContextResponse) {}
 }
 
+// Content category an output guideline applies to.
+enum GuidelineCategory {
+  GUIDELINE_CATEGORY_INVALID = 0;
+  GUIDELINE_CATEGORY_SEXUAL = 1;
+  GUIDELINE_CATEGORY_VIOLENCE = 2;
+  GUIDELINE_CATEGORY_SELF_HARM = 3;
+  GUIDELINE_CATEGORY_ILLICIT = 4;
+  GUIDELINE_CATEGORY_PROFANITY = 5;
+}
+
+// How the model should handle a guideline category.
+// `OFFER_SUPPORT` is valid only for `SELF_HARM`. Every category accepts `DECLINE`.
+enum GuidelineBehavior {
+  GUIDELINE_BEHAVIOR_INVALID = 0;
+  GUIDELINE_BEHAVIOR_DECLINE = 1;
+  GUIDELINE_BEHAVIOR_OFFER_SUPPORT = 2;
+}
+
+// A policy guideline. `behavior` must be supported for `category`: sexual, violence,
+// illicit, and profanity accept decline; self_harm accepts decline or offer_support.
+message PolicyGuideline {
+  GuidelineCategory category = 1;
+  GuidelineBehavior behavior = 2;
+}
+
+// One output guideline. The set `kind` is the JSON `type`: `policy` is `PolicyGuideline`.
+// A later kind is another oneof case. A category appears at most once.
+message Guideline {
+  oneof kind {
+    PolicyGuideline policy = 1;
+  }
+}
+
 message GetCompletionsRequest {
   reserved 4;
 
@@ -186,6 +219,11 @@ message GetCompletionsRequest {
   // with the request metadata so a usage-policy violation can be attributed
   // to that user rather than to the API key.
   optional string safety_identifier = 34;
+
+  // Output guidelines. Each category may appear once. Supported behaviors:
+  // sexual, violence, illicit, and profanity accept decline; self_harm accepts
+  // decline or offer_support.
+  repeated Guideline guidelines = 39;
 }
 
 message GetChatCompletionResponse {
