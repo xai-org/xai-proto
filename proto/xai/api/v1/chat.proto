@@ -222,7 +222,9 @@ message GetCompletionsRequest {
 
   // Output guidelines. Each category may appear once. Supported behaviors:
   // sexual, violence, illicit, and profanity accept decline; self_harm accepts
-  // decline or offer_support.
+  // decline or offer_support. A request whose guidelines cannot be applied,
+  // for example on a multi-agent model or with `stop`, fails with
+  // INVALID_ARGUMENT.
   repeated Guideline guidelines = 39;
 }
 
