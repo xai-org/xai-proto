@@ -42,24 +42,23 @@ service Chat {
 
 // Content category an output guideline applies to.
 enum GuidelineCategory {
+  reserved 3, 4;
+
   GUIDELINE_CATEGORY_INVALID = 0;
-  GUIDELINE_CATEGORY_SEXUAL = 1;
+  GUIDELINE_CATEGORY_NSFW = 1;
   GUIDELINE_CATEGORY_VIOLENCE = 2;
-  GUIDELINE_CATEGORY_SELF_HARM = 3;
-  GUIDELINE_CATEGORY_ILLICIT = 4;
   GUIDELINE_CATEGORY_PROFANITY = 5;
 }
 
 // How the model should handle a guideline category.
-// `OFFER_SUPPORT` is valid only for `SELF_HARM`. Every category accepts `DECLINE`.
 enum GuidelineBehavior {
+  reserved 2;
+
   GUIDELINE_BEHAVIOR_INVALID = 0;
   GUIDELINE_BEHAVIOR_DECLINE = 1;
-  GUIDELINE_BEHAVIOR_OFFER_SUPPORT = 2;
 }
 
-// A policy guideline. `behavior` must be supported for `category`: sexual, violence,
-// illicit, and profanity accept decline; self_harm accepts decline or offer_support.
+// A policy guideline. Every category accepts decline.
 message PolicyGuideline {
   GuidelineCategory category = 1;
   GuidelineBehavior behavior = 2;
@@ -220,9 +219,8 @@ message GetCompletionsRequest {
   // to that user rather than to the API key.
   optional string safety_identifier = 34;
 
-  // Output guidelines. Each category may appear once. Supported behaviors:
-  // sexual, violence, illicit, and profanity accept decline; self_harm accepts
-  // decline or offer_support. A request whose guidelines cannot be applied,
+  // Output guidelines. Each category may appear once, and every category
+  // accepts decline. A request whose guidelines cannot be applied,
   // for example on a multi-agent model or with `stop`, fails with
   // INVALID_ARGUMENT.
   repeated Guideline guidelines = 39;
