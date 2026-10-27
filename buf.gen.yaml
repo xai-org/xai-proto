@@ -2,6 +2,10 @@ version: v2
 clean: true # remove generated files before re-generating
 managed:
   enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/xai-org/xai-proto/gen/go
+
 plugins:
   # protoc v30
   - remote: buf.build/protocolbuffers/python:v30.0
@@ -27,3 +31,18 @@ plugins:
       - target=ts
       - json_types=true
   
+  # Go plugins (new)
+  - remote: buf.build/protocolbuffers/go:v1.35.2
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - Mgoogle/rpc/status.proto=google.golang.org/genproto/googleapis/rpc/status
+      - Mgoogle/api/annotations.proto=google.golang.org/genproto/googleapis/api/annotations
+      - Mgoogle/api/http.proto=google.golang.org/genproto/googleapis/api/annotations
+  - remote: buf.build/grpc/go:v1.5.1
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - Mgoogle/rpc/status.proto=google.golang.org/genproto/googleapis/rpc/status
+      - Mgoogle/api/annotations.proto=google.golang.org/genproto/googleapis/api/annotations
+      - Mgoogle/api/http.proto=google.golang.org/genproto/googleapis/api/annotations

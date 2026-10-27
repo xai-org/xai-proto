@@ -2,3 +2,26 @@ gen/
 .idea/
 .vscode/
 .DS_Store
+
+# Go generated files
+gen/go/
+go.sum
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
