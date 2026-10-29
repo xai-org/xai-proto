@@ -48,6 +48,9 @@ enum GuidelineCategory {
   GUIDELINE_CATEGORY_NSFW = 1;
   GUIDELINE_CATEGORY_VIOLENCE = 2;
   GUIDELINE_CATEGORY_PROFANITY = 5;
+  // Offensive and defensive security content. Accepts only allow, and only
+  // for API keys enabled for it.
+  GUIDELINE_CATEGORY_CYBER = 6;
 }
 
 // How the model should handle a guideline category.
@@ -56,9 +59,11 @@ enum GuidelineBehavior {
 
   GUIDELINE_BEHAVIOR_INVALID = 0;
   GUIDELINE_BEHAVIOR_DECLINE = 1;
+  GUIDELINE_BEHAVIOR_ALLOW = 3;
 }
 
-// A policy guideline. Every category accepts decline.
+// A policy guideline. nsfw, violence, and profanity accept decline; cyber
+// accepts allow.
 message PolicyGuideline {
   GuidelineCategory category = 1;
   GuidelineBehavior behavior = 2;
@@ -219,10 +224,9 @@ message GetCompletionsRequest {
   // to that user rather than to the API key.
   optional string safety_identifier = 34;
 
-  // Output guidelines. Each category may appear once, and every category
-  // accepts decline. A request whose guidelines cannot be applied,
-  // for example on a multi-agent model or with `stop`, fails with
-  // INVALID_ARGUMENT.
+  // Output guidelines. Each category may appear once. A request whose
+  // guidelines cannot be applied, for example on a multi-agent model or with
+  // `stop`, fails with INVALID_ARGUMENT.
   repeated Guideline guidelines = 39;
 }
 
