@@ -23,6 +23,8 @@ buf generate
 This command will:
 - Remove previously generated files (due to `clean: true` in `buf.gen.yaml`).
 - Generate Python code in the `gen/python` directory, using plugins for Python (`protocolbuffers/python`, `grpc/python`, `protocolbuffers/pyi`).
+- Generate Go code in the `gen/go` directory, using `protocolbuffers/go` and `grpc/go`. Import paths are set by managed mode to `github.com/xai-org/xai-proto/gen/go/...`; the Google API dependencies keep their canonical `google.golang.org/genproto/...` paths. To use the output as a module, add a `go.mod` in `gen/go` (`module github.com/xai-org/xai-proto/gen/go`) and run `go mod tidy`; the generated packages then build with `go build ./...`.
+- Generate TypeScript code in the `gen/ts` directory, using `bufbuild/es`.
 - Can be customized by editing `buf.gen.yaml` to support additional languages via Buf's remote plugin ecosystem.
 - Can also be customized to leverage locally installed plugins as well as remote ones.
 
